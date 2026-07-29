@@ -84,3 +84,11 @@ For debugging you can use VMware fusion on MacOS (free version) to run Windows 1
 ![screenshot of vmware](https://github.com/user-attachments/assets/9c446af5-0076-472f-9df4-efdf565207d0)
 
 You can run this on your macbook, but VMware can be a bit battery hungry. So I personally run it on a Mac Mini server that I keep at home. In the Windows VM you can enable RDP (remote access) to connect using any RDP client (confusingly called "Windows App" on MacOS these days), which works well. Finally tailscale also works well on Windows ARM64 so if you install that on the Windows VM and your macbook, you can RDP to the Windows machine from anywhere in the world.
+
+
+
+## Other Common Issues
+
+ - Packages unconditionally passing `-msse` flags to the C/C++ compiler fails because these extensions are not available on arm64 [example](https://github.com/Huber-group-EMBL/rhdf5filters/pull/33/changes)
+ - Autotools configure scripts often misdetect mingw on arm64, and generates MSVC style '.lib' files and commands
+ - Windows ARM64 [does not have MPI](https://github.com/microsoft/Microsoft-MPI/issues/75). So packages like Rmpi do not work.
