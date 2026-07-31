@@ -7,13 +7,13 @@ Building upon [earlier work](https://blog.r-project.org/2024/04/23/r-on-64-bit-a
 
 Base R installers are built daily on GitHub actions using the [r-devel/actions](https://github.com/r-devel/actions) workflow. You can download them here:
 
- - R-devel: https://github.com/r-devel/actions/releases/tag/devel
- - R-patched: https://github.com/r-devel/actions/releases/tag/next
- - R-release: https://github.com/r-devel/actions/releases/tag/4.6.1
+ - R-devel: https://github.com/r-devel/windows-arm64/releases/tag/devel
+ - R-patched: https://github.com/r-devel/windows-arm64/releases/tag/next
+ - R-release: https://github.com/r-devel/windows-arm64/releases/tag/4.6.1
 
-Because R officially does not support arm64 on Windows, an unpatched build would install Windows binary packages for x86_64 which won't work. 
+Because R officially does not support arm64 on Windows yet, an unpatched build would install Windows binary packages for x86_64 which leads to disaster.
 
-Therefore this build is [patched](https://github.com/r-devel/actions/blob/main/build-r-windows/winarm64.patch) to download binaries from  `/bin/windows/clang-aarch64/contrib/` instead of `/bin/windows/contrib/` on CRAN-like package repositories, e.g:
+Therefore this build is [modified](https://github.com/r-devel/actions/blob/main/build-r-windows/winarm64.patch) to download binary packages on CRAN-like package repositories from  `/bin/windows/clang-aarch64/contrib/` instead of `/bin/windows/contrib/` e.g:
 
  - https://cran.r-universe.dev/bin/windows/clang-aarch64/contrib/4.7/PACKAGES
  - https://bioc.r-universe.dev/bin/windows/clang-aarch64/contrib/4.7/PACKAGES
@@ -28,19 +28,21 @@ After the passing of the maintainer, Rtools is de-facto unmaintained, so be awar
 
 ## Binary Packages
 
-Windows ARM64 binary packages for CRAN and other repositories are available from R-universe (currently only for R-devel 4.7). Simply set the R-universe mirror as the CRAN mirror and things will work: 
+Windows ARM64 binary packages for CRAN and BioC and other repositories are available from [R-universe](https://cran.r-universe.dev/). The installers linked above enabled these mirrors by default, such that `install.packages()` works as expected. If you modify your repos manually simply use these mirrors to give R access to the clang-aarch64 binaries:
 
 ```r
-# Requires R-4.7 for now
-options(repos = c(CRAN = "https://cran.r-universe.dev"))
+options(repos = c(
+	CRAN = "https://cran.r-universe.dev", 
+	BIOC = "https://bioc-release.r-universe.dev"))
 install.packages("tidyverse")
 ```
 
-You can also inspect check results for the packages, for example: https://cran.r-universe.dev/dplyr#checktable
+The R-universe website also shows CMD-check results for the packages, for example
 
-We are currently in the process of backfilling the arm64 binaries for other universes as well.
+ - https://cran.r-universe.dev/dplyr#checktable
+ - https://bioc.r-universe.dev/S4Vectors#checktable
 
-Note that R-universe only builds packages for ARM64 on Windows and Linux if they contain compiled (C/C++/Fortran/Rust) code. For packages containing only R code, there is no difference between x86_64 and arm64 binary, so we serve the same binary to both architectures.
+Note that only R packages which contain compiled (C/C++/Fortran/Rust) code are built for ARM64. For packages containing solely R code, there is no difference between x86_64 and arm64 binary, so we build only on x86_64 and serve the same binary to both architectures. This holds both for Windows and Linux.
 
 
 ## Rust Support
@@ -48,7 +50,7 @@ Note that R-universe only builds packages for ARM64 on Windows and Linux if they
 Rust is fully supported. As 2025 the `aarch64-pc-windows-gnullvm` target (which is what rtools45 needs) has [tier-2 status](https://doc.rust-lang.org/stable/rustc/platform-support/windows-gnullvm.html), so we can install the toolchain using rustup:
 
 ```sh
-rustup target add aarch64-pc-windows-gnullvm.
+rustup target add aarch64-pc-windows-gnullvm
 ```
 
 However not all R packages work yet because the R package needs to invoke `cargo` with `--target=aarch64-pc-windows-gnullvm` but many older R packages are unconditionally targeting `x86_64-pc-windows-gnu` on Windows, which is wrong. For a simple solution, see the [method from hellorust](https://github.com/r-rust/hellorust/commit/e371cae6bbd7a812e363aa723b1d106389feeb02).
@@ -76,19 +78,18 @@ The popular workflows from [r-lib/actions](https://github.com/r-lib/actions) sup
 Alternatively you can copy the [canned workflow from r-universe](https://docs.r-universe.dev/publish/troubleshoot-build.html#how-to-test-the-r-universe-build-workflow-from-your-own-github-repository) in your own package repository to run the exact same builds and checks that R-universe would run.
 
 
+## Some Common Issues
 
-## Debugging setup for MacOS users
+ - Packages unconditionally passing `-msse` flags to the C/C++ compiler fails because these extensions are not available on arm64 [example](https://github.com/Huber-group-EMBL/rhdf5filters/pull/33/changes)
+ - Autotools configure scripts often misdetect mingw on arm64, and generates MSVC style '.lib' files and commands
+ - Windows ARM64 [does not have MPI](https://github.com/microsoft/Microsoft-MPI/issues/75). So packages like Rmpi do not work.
+
+
+
+## Debugging Setup for MacOS
 
 For debugging you can use VMware fusion on MacOS (free version) to run Windows 11 for ARM (downloaded from https://www.microsoft.com/en-us/software-download/windows11arm64) on Apple M1+ hardware.
 
 ![screenshot of vmware](https://github.com/user-attachments/assets/9c446af5-0076-472f-9df4-efdf565207d0)
 
 You can run this on your macbook, but VMware can be a bit battery hungry. So I personally run it on a Mac Mini server that I keep at home. In the Windows VM you can enable RDP (remote access) to connect using any RDP client (confusingly called "Windows App" on MacOS these days), which works well. Finally tailscale also works well on Windows ARM64 so if you install that on the Windows VM and your macbook, you can RDP to the Windows machine from anywhere in the world.
-
-
-
-## Other Common Issues
-
- - Packages unconditionally passing `-msse` flags to the C/C++ compiler fails because these extensions are not available on arm64 [example](https://github.com/Huber-group-EMBL/rhdf5filters/pull/33/changes)
- - Autotools configure scripts often misdetect mingw on arm64, and generates MSVC style '.lib' files and commands
- - Windows ARM64 [does not have MPI](https://github.com/microsoft/Microsoft-MPI/issues/75). So packages like Rmpi do not work.
