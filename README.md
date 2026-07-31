@@ -28,19 +28,16 @@ After the passing of the maintainer, Rtools is de-facto unmaintained, so be awar
 
 ## Binary Packages
 
-Windows ARM64 binary packages for CRAN and other repositories are available from R-universe (currently only for R-devel 4.7). Simply set the R-universe mirror as the CRAN mirror and things will work: 
+Windows ARM64 binary packages for CRAN and BioC and other repositories are available from R-universe. Simply set the R-universe mirror as the CRAN mirror and things will work:
 
 ```r
-# Requires R-4.7 for now
 options(repos = c(CRAN = "https://cran.r-universe.dev"))
 install.packages("tidyverse")
 ```
 
-You can also inspect check results for the packages, for example: https://cran.r-universe.dev/dplyr#checktable
+The R-universe website also shows CMD-check results for the packages, just navigate to: [`https://cran.r-universe.dev/{pkg}#checktable`](https://cran.r-universe.dev/dplyr#checktable)
 
-We are currently in the process of backfilling the arm64 binaries for other universes as well.
-
-Note that R-universe only builds packages for ARM64 on Windows and Linux if they contain compiled (C/C++/Fortran/Rust) code. For packages containing only R code, there is no difference between x86_64 and arm64 binary, so we serve the same binary to both architectures.
+Note that only R packages which contain compiled (C/C++/Fortran/Rust) code are built for ARM64 on Windows and Linux. For packages containing solely R code, there is no difference between x86_64 and arm64 binary, so we build only on x86_64 and serve the same binary to both architectures.
 
 
 ## Rust Support
@@ -87,7 +84,7 @@ You can run this on your macbook, but VMware can be a bit battery hungry. So I p
 
 
 
-## Other Common Issues
+## Some Common Issues
 
  - Packages unconditionally passing `-msse` flags to the C/C++ compiler fails because these extensions are not available on arm64 [example](https://github.com/Huber-group-EMBL/rhdf5filters/pull/33/changes)
  - Autotools configure scripts often misdetect mingw on arm64, and generates MSVC style '.lib' files and commands
