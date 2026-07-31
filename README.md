@@ -7,9 +7,9 @@ Building upon [earlier work](https://blog.r-project.org/2024/04/23/r-on-64-bit-a
 
 Base R installers are built daily on GitHub actions using the [r-devel/actions](https://github.com/r-devel/actions) workflow. You can download them here:
 
- - R-devel: https://github.com/r-devel/actions/releases/tag/devel
- - R-patched: https://github.com/r-devel/actions/releases/tag/next
- - R-release: https://github.com/r-devel/actions/releases/tag/4.6.1
+ - R-devel: https://github.com/r-devel/windows-arm64/releases/tag/devel
+ - R-patched: https://github.com/r-devel/windows-arm64/releases/tag/next
+ - R-release: https://github.com/r-devel/windows-arm64/releases/tag/4.6.1
 
 Because R officially does not support arm64 on Windows, an unpatched build would install Windows binary packages for x86_64 which won't work. 
 
@@ -28,19 +28,21 @@ After the passing of the maintainer, Rtools is de-facto unmaintained, so be awar
 
 ## Binary Packages
 
-Windows ARM64 binary packages for CRAN and other repositories are available from R-universe (currently only for R-devel 4.7). Simply set the R-universe mirror as the CRAN mirror and things will work: 
+Windows ARM64 binary packages for CRAN and BioC and other repositories are available from [R-universe](https://cran.r-universe.dev/). The installers linked above enabled these mirrors by default, such that `install.packages()` works as expected. If you modify your repos manually simply use these mirrors to give R access to the clang-aarch64 binaries:
 
 ```r
-# Requires R-4.7 for now
-options(repos = c(CRAN = "https://cran.r-universe.dev"))
+options(repos = c(
+	CRAN = "https://cran.r-universe.dev", 
+	BIOC = "https://bioc-release.r-universe.dev"))
 install.packages("tidyverse")
 ```
 
-You can also inspect check results for the packages, for example: https://cran.r-universe.dev/dplyr#checktable
+The R-universe website also shows CMD-check results for the packages, for example
 
-We are currently in the process of backfilling the arm64 binaries for other universes as well.
+ - https://cran.r-universe.dev/dplyr#checktable
+ - https://bioc.r-universe.dev/S4Vectors#checktable
 
-Note that R-universe only builds packages for ARM64 on Windows and Linux if they contain compiled (C/C++/Fortran/Rust) code. For packages containing only R code, there is no difference between x86_64 and arm64 binary, so we serve the same binary to both architectures.
+Note that only R packages which contain compiled (C/C++/Fortran/Rust) code are built for ARM64. For packages containing solely R code, there is no difference between x86_64 and arm64 binary, so we build only on x86_64 and serve the same binary to both architectures. This holds both for Windows and Linux.
 
 
 ## Rust Support
@@ -87,7 +89,7 @@ You can run this on your macbook, but VMware can be a bit battery hungry. So I p
 
 
 
-## Other Common Issues
+## Some Common Issues
 
  - Packages unconditionally passing `-msse` flags to the C/C++ compiler fails because these extensions are not available on arm64 [example](https://github.com/Huber-group-EMBL/rhdf5filters/pull/33/changes)
  - Autotools configure scripts often misdetect mingw on arm64, and generates MSVC style '.lib' files and commands
