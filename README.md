@@ -74,7 +74,7 @@ R packages using `extendr` need at least version `0.8.2` of the `externdr-api` c
 
 ## More Tools
 
-JAGS: a community port of JAGS for Windows ARM64 to compile `rjags` and `runjags`  is available here: https://github.com/r-windows/JAGS/releases/tag/installers.
+JAGS: a community port of JAGS for Windows ARM64 to compile `rjags` and `runjags`  is available here: https://github.com/r-windows/JAGS/releases/tag/installers
 
 Pandoc/quarto: these are standalone executables so I recommend just installing the x86_64 ones, which will run fine on ARM64 as well.
 
@@ -103,6 +103,6 @@ Alternatively you can copy the [canned workflow from r-universe](https://docs.r-
 
 For debugging you can use VMware fusion on MacOS (free version) to run Windows 11 for ARM (downloaded from https://www.microsoft.com/en-us/software-download/windows11arm64) on Apple M1+ hardware.
 
-![screenshot of vmware](https://github.com/user-attachments/assets/9c446af5-0076-472f-9df4-efdf565207d0)
+![screenshot of vmware](vmware.png)
 
 You can run this on your macbook, but VMware can be a bit battery hungry. So I personally run it on a Mac Mini server that I keep at home. In the Windows VM you can enable RDP (remote access) to connect using any RDP client (confusingly called "Windows App" on MacOS these days), which works well. Finally tailscale also works well on Windows ARM64 so if you install that on the Windows VM and your macbook, you can RDP to the Windows machine from anywhere in the world.
