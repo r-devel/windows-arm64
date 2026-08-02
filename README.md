@@ -28,7 +28,7 @@ After the passing of the maintainer, Rtools is de-facto unmaintained, so be awar
 
 ## Binary Packages
 
-Windows ARM64 binary packages for CRAN and BioC and other repositories are available from [R-universe](https://cran.r-universe.dev/). The installers linked above enabled these mirrors by default, such that `install.packages()` works as expected. If you modify your repos manually simply use these mirrors to give R access to the clang-aarch64 binaries:
+Windows ARM64 binary packages for CRAN and BioC and other repositories are available from [R-universe](https://cran.r-universe.dev/). The installers linked above use these mirrors by default, such that `install.packages()` works as expected. If you modify your repos manually, simply set the following mirrors to give R access to the clang-aarch64 binaries:
 
 ```r
 options(repos = c(
