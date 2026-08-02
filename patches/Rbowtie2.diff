@@ -1,0 +1,19 @@
+diff --git a/Rbowtie2/src/bowtie2-2.4.4/Makefile.win b/Rbowtie2/src/bowtie2-2.4.4/Makefile.win
+index 3581431..620a8c4 100644
+--- a/Rbowtie2/src/bowtie2-2.4.4/Makefile.win
++++ b/Rbowtie2/src/bowtie2-2.4.4/Makefile.win
+@@ -42,11 +42,12 @@ BOWTIE_SHARED_MEM :=
+ 
+ 
+ BITS := 32
+-ifneq (,$(findstring $(shell uname -m), x86_64 amd64))
++TARGET_TRIPLE := $(shell $(CXX) -dumpmachine)
++ifneq (,$(findstring x86_64,$(TARGET_TRIPLE))$(findstring amd64,$(TARGET_TRIPLE)))
+   BITS := 64
+   SSE_FLAG := -msse2
+   POPCNT_CAPABILITY ?= 1
+-else ifneq (,$(findstring $(shell uname -m), aarch64 arm64 s390x ppc64 ppc64le))
++else ifneq (,$(findstring aarch64,$(TARGET_TRIPLE))$(findstring arm64,$(TARGET_TRIPLE)))
+   BITS := 64
+   SSE_FLAG :=
+   CXXFLAGS += -fopenmp-simd

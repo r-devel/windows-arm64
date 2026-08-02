@@ -1,0 +1,14 @@
+diff --git a/R/Flags.R b/R/Flags.R
+index 46c91ae..0169275 100644
+--- a/StanHeaders/R/Flags.R
++++ b/StanHeaders/R/Flags.R
+@@ -17,6 +17,9 @@ CxxFlags <- function(as_character = FALSE) {
+ }
+ 
+ LdFlags <- function(as_character = FALSE) {
++  if(.Platform$OS.type == 'windows'){
++     return(RcppParallel::LdFlags())
++  }
+   if (dir.exists(Sys.getenv("TBB_LIB"))) {
+     TBB_LIB <- normalizePath(Sys.getenv("TBB_LIB"))
+   } else {

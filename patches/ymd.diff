@@ -1,0 +1,166 @@
+diff -Nru orig/ymd/src/Makevars.win.in new/ymd/src/Makevars.win.in
+--- orig/ymd/src/Makevars.win.in	2025-04-15 06:59:06
++++ new/ymd/src/Makevars.win.in	2026-08-01 21:09:44
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -19,7 +19,7 @@
+ 	touch $(TARGET_DIR)/libgcc_mock/libgcc_eh.a
+ 
+ 	if [ "$(NOT_CRAN)" != "true" ]; then \
+-		if [ -f ./rust/vendor.tar.xz ]; then \
++		if [ -f ./rust/novendor.tar.xz ]; then \
+ 			tar xf rust/vendor.tar.xz && \
+ 			mkdir -p $(CARGOTMP) && \
+ 			cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+diff -Nru orig/ymd/src/rust/Cargo.lock new/ymd/src/rust/Cargo.lock
+--- orig/ymd/src/rust/Cargo.lock	2025-04-15 07:04:41
++++ new/ymd/src/rust/Cargo.lock	2026-08-01 21:08:15
+@@ -24,12 +24,6 @@
+ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
+ 
+ [[package]]
+-name = "build-print"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4a2128d00b7061b82b72844a351e80acd29e05afc60e9261e2ac90dca9ecc2ac"
+-
+-[[package]]
+ name = "bumpalo"
+ version = "3.17.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -72,19 +66,40 @@
+ 
+ [[package]]
+ name = "ctor"
+-version = "0.2.9"
++version = "0.4.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "32a2785755761f3ddc1492979ce1e48d2c00d09311c39e4466429188f3dd6501"
++checksum = "ec09e802f5081de6157da9a75701d6c713d8dc3ba52571fd4bd25f412644e8a6"
+ dependencies = [
+- "quote",
+- "syn",
++ "ctor-proc-macro",
++ "dtor",
+ ]
+ 
+ [[package]]
++name = "ctor-proc-macro"
++version = "0.0.6"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e2931af7e13dc045d8e9d26afccc6fa115d64e115c9c84b1166288b46f6782c2"
++
++[[package]]
++name = "dtor"
++version = "0.0.6"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "97cbdf2ad6846025e8e25df05171abfb30e3ababa12ee0a0e44b9bbe570633a8"
++dependencies = [
++ "dtor-proc-macro",
++]
++
++[[package]]
++name = "dtor-proc-macro"
++version = "0.0.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "7454e41ff9012c00d53cf7f475c5e3afa3b91b7c90568495495e8d9bf47a1055"
++
++[[package]]
+ name = "extendr-api"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "cae12193370e4f00f4a54b64f40dabc753ad755f15229c367e4b5851ed206954"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "extendr-ffi",
+  "extendr-macros",
+@@ -94,9 +109,9 @@
+ 
+ [[package]]
+ name = "extendr-engine"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "38fd5c794b955e643ac021664ef1db482f0cad218837614485e6b04071bfc42a"
++checksum = "0c84ebc7f5dbdb1f9e4df721b7b9f9d5a19edee532bee541d793fc0694f14d3a"
+ dependencies = [
+  "ctor",
+  "extendr-ffi",
+@@ -104,18 +119,15 @@
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b48f96b7a4a2ff009ad9087f22a6de2312731a4096b520e3eb1c483df476ae95"
+-dependencies = [
+- "build-print",
+-]
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fdbbac9afddafddb4dabd10aefa8082e3f057ec5bfa519c7b44af114e7ebf1a5"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff -Nru orig/ymd/src/rust/Cargo.toml new/ymd/src/rust/Cargo.toml
+--- orig/ymd/src/rust/Cargo.toml	2025-04-15 06:55:19
++++ new/ymd/src/rust/Cargo.toml	2026-08-01 21:08:15
+@@ -9,7 +9,7 @@
+ 
+ [dependencies]
+ chrono = "0.4.40"
+-extendr-api = "0.8.0"
++extendr-api = "0.8.2"
+ 
+ [dev-dependencies]
+-extendr-engine = "0.8.0"
++extendr-engine = "0.8.2"
+diff -Nru orig/ymd/tools/config.R new/ymd/tools/config.R
+--- orig/ymd/tools/config.R	2025-04-15 07:00:15
++++ new/ymd/tools/config.R	2026-08-01 21:09:21
+@@ -6,7 +6,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE 
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -40,6 +40,16 @@
+ # read in the Makevars.in file
+ is_windows <- .Platform[["OS.type"]] == "windows"
+ 
++.windows_target <- if(grepl("aarch", R.version$platform)){
++  "aarch64-pc-windows-gnullvm"
++} else if(grepl("clang", Sys.getenv('R_COMPILED_BY'))){
++  "x86_64-pc-windows-gnullvm"
++} else if(grepl("i386", R.version$platform)){
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ # if windows we replace in the Makevars.win.in
+ mv_fp <- ifelse(
+   is_windows,
+@@ -65,6 +75,7 @@
+ 
+ # replace placeholder values
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _)

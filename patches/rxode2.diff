@@ -1,0 +1,98 @@
+diff --git a/rxode2/inst/tools/workaround.R b/rxode2/inst/tools/workaround.R
+index bc740fb..94a4458 100644
+--- a/rxode2/inst/tools/workaround.R
++++ b/rxode2/inst/tools/workaround.R
+@@ -76,6 +76,9 @@ if (inherits(versionInfo, "try-error")) {
+ 
+ .sl <- paste(capture.output(StanHeaders:::LdFlags()),
+              capture.output(RcppParallel:::RcppParallelLibs()))
++# Set when the TBB link flags are stripped below; the compile-time
++# STAN_THREADS/TBB defines must then be stripped too (see @SH@ handling).
++.rxDisableTbb <- FALSE
+ if (.Platform$OS.type == "windows") {
+   # rpath is not meaningful on Windows and can generate noisy linker flags.
+   # The path is shQuote()d by StanHeaders, so match quoted forms first;
+@@ -108,6 +111,7 @@ if (.Platform$OS.type == "windows") {
+       .sl <- gsub("-ltbbmalloc\\b", "", .sl)
+       .sl <- gsub("-ltbb\\b", "", .sl)
+       .sl <- gsub("\\s+", " ", trimws(.sl))
++      .rxDisableTbb <- TRUE
+     }
+   }
+ }
+@@ -420,13 +424,23 @@ close(.ie_out)
+ 
+ 
+ .badStan <- ""
+-.in <- gsub("@SH@", gsub("-I", "-@ISYSTEM@",
+-                         paste(capture.output(StanHeaders:::CxxFlags()), # nolint
+-                               capture.output(RcppParallel:::CxxFlags()), # nolint
+-                               paste0("-@ISYSTEM@'", system.file('include', package = 'StanHeaders', mustWork = TRUE), "'"),
+-                               paste0("-@ISYSTEM@'", system.file('include', 'src', package = 'StanHeaders', mustWork = TRUE), "'"),
+-                               .badStan)),
+-            .in)
++.sh <- paste(capture.output(StanHeaders:::CxxFlags()), # nolint
++             capture.output(RcppParallel:::CxxFlags()), # nolint
++             paste0("-@ISYSTEM@'", system.file('include', package = 'StanHeaders', mustWork = TRUE), "'"),
++             paste0("-@ISYSTEM@'", system.file('include', 'src', package = 'StanHeaders', mustWork = TRUE), "'"),
++             .badStan)
++if (.rxDisableTbb) {
++  # The -ltbb/rxode2/-ltbbmalloc link flags were stripped above (RcppParallel >=
++  # 6.0.0 on Windows no longer provides libtbb).  Compiling with
++  # -DSTAN_THREADS / -DRCPP_PARALLEL_USE_TBB=1 would still pull stan::math's
++  # ad_tape_observer (a tbb::task_scheduler_observer) into the objects,
++  # leaving undefined references to tbb::detail::r1::observe at link time.
++  # Drop the defines so Stan math and RcppParallel compile without TBB.
++  .sh <- gsub("-DSTAN_THREADS\\b", "", .sh)
++  .sh <- gsub("-DRCPP_PARALLEL_USE_TBB=1", "-DRCPP_PARALLEL_USE_TBB=0", .sh)
++  .sh <- gsub("\\s+", " ", trimws(.sh))
++}
++.in <- gsub("@SH@", gsub("-I", "-@ISYSTEM@", .sh), .in)
+ 
+ 
+ 
+diff --git a/rxode2/src/linCmt.cpp b/rxode2/src/linCmt.cpp
+index 29fd840..a2d7b76 100644
+--- a/rxode2/src/linCmt.cpp
++++ b/rxode2/src/linCmt.cpp
+@@ -10,6 +10,16 @@
+ #include "linCmt.h"
+ #include "linCmtSensType.h"
+ 
++#ifdef RXODE2_NO_STAN_TBB_OBSERVER
++// stan-math's init_chainablestack.hpp is kept out of the build (no TBB on
++// Windows, see rxode2_sundials_stan_compat.h).  Its global ad_tape_observer
++// was also what created the main thread's AD tape; without STAN_THREADS the
++// tape is a plain (shared) global, so constructing one ChainableStack here
++// initializes it for the whole DLL.
++namespace {
++stan::math::ChainableStack rxode2MainThreadAdTape;
++}
++#endif
+ 
+ extern rx_solving_options op_global;
+ extern t_update_inis update_inis;
+diff --git a/rxode2/src/rxode2_sundials_stan_compat.h b/rxode2/src/rxode2_sundials_stan_compat.h
+index 91506a5..2f37291 100644
+--- a/rxode2/src/rxode2_sundials_stan_compat.h
++++ b/rxode2/src/rxode2_sundials_stan_compat.h
+@@ -40,4 +40,19 @@ typedef sunrealtype realtype;
+ #endif
+ #endif
+ 
++/*
++ * RcppParallel >= 6.0.0 statically links TBB on Windows and no longer exports
++ * the oneTBB runtime symbols (tbb::detail::r1::observe) that stan-math's
++ * ad_tape_observer (stan/math/rev/core/init_chainablestack.hpp) needs, so
++ * configure strips -DSTAN_THREADS and no TBB library is linked (see
++ * inst/tools/workaround.R).  Pre-define that header's include guard so the
++ * TBB task_scheduler_observer never enters the build.  The main-thread AD
++ * tape that observer would have created is created in linCmt.cpp instead,
++ * keyed on RXODE2_NO_STAN_TBB_OBSERVER.
++ */
++#if defined(_WIN32) && !defined(STAN_THREADS) && defined(__cplusplus)
++#define STAN_MATH_REV_CORE_INIT_CHAINABLESTACK_HPP
++#define RXODE2_NO_STAN_TBB_OBSERVER
++#endif
++
+ #endif

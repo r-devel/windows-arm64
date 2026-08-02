@@ -1,0 +1,85 @@
+diff --git a/ggmlR/configure.win b/ggmlR/configure.win
+index 3634eb5..8b907a9 100755
+--- a/ggmlR/configure.win
++++ b/ggmlR/configure.win
+@@ -247,6 +247,41 @@ else
+   echo "SIMD: disabled (default). Use --with-simd to enable."
+ fi
+ 
++# --- Detect CPU architecture for arch-fallback ---
++#
++# We only ship arch/x86/ native implementations. On non-x86 targets (Windows
++# arm64) we need -DGGML_CPU_GENERIC so that arch-fallback.h maps all _generic
++# functions to their canonical names; otherwise the aarch64 branch of that
++# header expects arch/arm/ sources we don't ship, and the link fails with
++# undefined ggml_gemv_*/ggml_gemm_* repack symbols. Same mechanism as the
++# Unix configure.
++#
++# Unlike the Unix configure we cannot trust `uname -m`: on Windows arm64 the
++# MSYS shell may run under x64 emulation and report x86_64 even though the
++# toolchain targets aarch64. Ask the C compiler for its target triple instead
++# (both gcc and clang support -dumpmachine), reading CC from R's Makeconf when
++# it is not in the environment.
++echo "Detecting CPU architecture..."
++GENERIC_CPPFLAGS=""
++X86_OBJECTS="ggml-cpu/arch/x86/cpu-feats.o ggml-cpu/arch/x86/quants.o ggml-cpu/arch/x86/repack.o"
++ARCH_CC="${CC:-}"
++if [ -z "$ARCH_CC" ] && [ -n "$MAKECONF" ]; then
++  ARCH_CC=$(grep '^CC *=' "$MAKECONF" | head -1 | sed 's/[^=]*= *//')
++fi
++[ -z "$ARCH_CC" ] && ARCH_CC=gcc
++ARCH=$($ARCH_CC -dumpmachine 2>/dev/null)
++[ -z "$ARCH" ] && ARCH=$(uname -m 2>/dev/null || echo "unknown")
++case "$ARCH" in
++  x86_64*|i?86*|amd64*)
++    echo "  x86 architecture detected ($ARCH), using native arch/x86/ implementations"
++    ;;
++  *)
++    GENERIC_CPPFLAGS="-DGGML_CPU_GENERIC"
++    X86_OBJECTS=""
++    echo "  Non-x86 architecture ($ARCH), using generic CPU fallbacks"
++    ;;
++esac
++
+ # --- Build Vulkan shaders ---
+ if [ "$USE_VULKAN" = "yes" ]; then
+ 
+@@ -382,6 +417,8 @@ sed \
+   -e "s|@OPENMP_CFLAGS@|$OPENMP_CFLAGS|g" \
+   -e "s|@OPENMP_CXXFLAGS@|$OPENMP_CXXFLAGS|g" \
+   -e "s|@OPENMP_CPPFLAGS@|$OPENMP_CPPFLAGS|g" \
++  -e "s|@GENERIC_CPPFLAGS@|$GENERIC_CPPFLAGS|g" \
++  -e "s|@X86_OBJECTS@|$X86_OBJECTS|g" \
+   src/Makevars.win.in > src/Makevars.win
+ 
+ # Sync public headers from src/ to inst/include/
+diff --git a/ggmlR/src/Makevars.win.in b/ggmlR/src/Makevars.win.in
+index 6bd70fc..661b3d0 100644
+--- a/ggmlR/src/Makevars.win.in
++++ b/ggmlR/src/Makevars.win.in
+@@ -43,10 +43,15 @@ GGML_CPPFLAGS = -I. -Iggml-cpu -Iggml-cpu/arch/x86 \
+ OPENMP_CPPFLAGS = @OPENMP_CPPFLAGS@
+ GGML_CPPFLAGS += $(OPENMP_CPPFLAGS)
+ 
++# -DGGML_CPU_GENERIC on non-x86 targets (set by configure.win): we only ship
++# arch/x86/ native implementations, so arch-fallback.h must map the _generic
++# functions to their canonical names (same mechanism as the Unix configure).
++GENERIC_CPPFLAGS = @GENERIC_CPPFLAGS@
++
+ # Force include R compatibility header for CRAN compliance
+ # This redirects stdout/stderr/abort to R-safe alternatives
+ # r_ggml_io.c is compiled separately without this header (see rule below)
+-PKG_CPPFLAGS = $(GGML_CPPFLAGS) $(VULKAN_CPPFLAGS) -DGGML_R_PACKAGE -include r_ggml_compat.h
++PKG_CPPFLAGS = $(GGML_CPPFLAGS) $(VULKAN_CPPFLAGS) $(GENERIC_CPPFLAGS) -DGGML_R_PACKAGE -include r_ggml_compat.h
+ 
+ # CPU SIMD flags (set by configure.win: individual -msse4.2 -mavx2 etc. or empty)
+ SIMD_CFLAGS = @SIMD_CFLAGS@
+@@ -91,7 +96,7 @@ GGML_OBJECTS = \
+   ggml-cpu/ops-private.o ggml-cpu/vec.o \
+   ggml-cpu/binary-ops.o ggml-cpu/unary-ops.o ggml-cpu/repack.o \
+   ggml-cpu/quants.o ggml-cpu/hbm.o \
+-  ggml-cpu/arch/x86/cpu-feats.o ggml-cpu/arch/x86/quants.o ggml-cpu/arch/x86/repack.o
++  @X86_OBJECTS@
+ 
+ # ONNX loader objects
+ ONNX_OBJECTS = \

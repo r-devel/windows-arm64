@@ -1,0 +1,97 @@
+diff -Nru orig/a5R/src/Makevars.win.in new/a5R/src/Makevars.win.in
+--- orig/a5R/src/Makevars.win.in	2026-08-01 22:35:31
++++ new/a5R/src/Makevars.win.in	2026-08-01 22:37:06
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -18,7 +18,7 @@
+ 	mkdir -p $(TARGET_DIR)/libgcc_mock
+ 	touch $(TARGET_DIR)/libgcc_mock/libgcc_eh.a
+ 
+-	if [ -f ./rust/vendor.tar.xz ]; then \
++	if [ -f ./rust/novendor.tar.xz ]; then \
+ 		tar xf rust/vendor.tar.xz && \
+ 		mkdir -p $(CARGOTMP) && \
+ 		cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+diff -Nru orig/a5R/src/rust/Cargo.lock new/a5R/src/rust/Cargo.lock
+--- orig/a5R/src/rust/Cargo.lock	2026-08-01 22:35:31
++++ new/a5R/src/rust/Cargo.lock	2026-08-01 22:37:27
+@@ -54,9 +54,9 @@
+ 
+ [[package]]
+ name = "extendr-api"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ea54977c6e37236839ffcbc20b5dcea58aa32ae43fbef54a81e1011dc6b19061"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "extendr-ffi",
+  "extendr-macros",
+@@ -66,15 +66,15 @@
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c76777174a82bdb3e66872f580687d3d0143eed1df9b9cd72b321b9596a23ca7"
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "661cc4ae29de9c4dafe16cfcbda1dbb9f31bd2568f96ebad232cc1f9bcc8b04d"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff -Nru orig/a5R/src/rust/Cargo.toml new/a5R/src/rust/Cargo.toml
+--- orig/a5R/src/rust/Cargo.toml	2026-08-01 22:35:31
++++ new/a5R/src/rust/Cargo.toml	2026-08-01 22:37:17
+@@ -10,7 +10,7 @@
+ name = 'a5R'
+ 
+ [dependencies]
+-extendr-api = '0.8.1'
++extendr-api = '0.8.2'
+ a5 = '0.9.0'
+ geographiclib-rs = { version = '0.2', default-features = false }
+ rayon = '1.11'
+diff -Nru orig/a5R/tools/config.R new/a5R/tools/config.R
+--- orig/a5R/tools/config.R	2026-08-01 22:35:31
++++ new/a5R/tools/config.R	2026-08-01 22:37:06
+@@ -9,7 +9,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -97,8 +97,19 @@
+ # read as a single string
+ mv_txt <- readLines(mv_fp)
+ 
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ # replace placeholder values
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _) |>

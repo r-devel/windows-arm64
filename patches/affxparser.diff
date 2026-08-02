@@ -1,0 +1,30 @@
+diff --git a/affxparser/src/Makevars.win b/affxparser/src/Makevars.win
+index 67ee8c4..2896a49 100644
+--- a/affxparser/src/Makevars.win
++++ b/affxparser/src/Makevars.win
+@@ -31,7 +31,9 @@ PKG_CPPFLAGS = \
+  -I$(FUSION_SDK)/util\
+  -I$(FUSION_SDK)\
+  -D_USE_MEM_MAPPING_\
+- -D_MSC_VER
++ -D_MSC_VER\
++ -D_NATIVE_WCHAR_T_DEFINED\
++ -D_LIBCPP_NO_VCRUNTIME
+ 
+ PKG_CPP_SOURCES = \
+ 	$(FUSION_SDK)/calvin_files/data/src/CDFData.cpp\
+diff --git a/affxparser/src/_mingw.h b/affxparser/src/_mingw.h
+index 003e99a..df7016b 100644
+--- a/affxparser/src/_mingw.h
++++ b/affxparser/src/_mingw.h
+@@ -11,7 +11,9 @@
+ #define GCC_VERSION (__GNUC__ * 10000 \
+                               + __GNUC_MINOR__ * 100 \
+                               + __GNUC_PATCHLEVEL__)
+-#if GCC_VERSION >= 120200
++#if defined(__clang__)
++#include "_mingw_gcc1202.h"
++#elif GCC_VERSION >= 120200
+ #include "_mingw_gcc1202.h"
+ #elif GCC_VERSION >= 100200
+ #include "_mingw_gcc1002.h"

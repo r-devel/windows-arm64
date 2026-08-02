@@ -1,0 +1,11 @@
+diff --git a/src/Makevars.win b/src/Makevars.win
+index f1f4cd2..78e47c4 100644
+--- a/rswipl/src/Makevars.win
++++ b/rswipl/src/Makevars.win
+@@ -1,5 +1,5 @@
+ PKG_CPPFLAGS=-I../inst/swipl/include $(CXXPICFLAGS) -D_REENTRANT -D__SWI_PROLOG__ -O2 -gdwarf-2 -g3 -Wall -fno-strict-aliasing -D__WINDOWS__ -D_WINDOWS -D_WIN32_WINNT=0x0600 -DWIN64
+-PKG_LIBS=-Wl,-Bsymbolic-functions -L../inst/swipl/bin -lswipl -lgmp -lz -lm -lpthread -lws2_32 -lpsapi -lwinmm -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
++PKG_LIBS=-L../inst/swipl/bin -lswipl -lgmp -lz -lm -lpthread -lws2_32 -lpsapi -lwinmm -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+ 
+ all: $(SHLIB)
+ $(SHLIB): ../build/done

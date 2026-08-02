@@ -1,0 +1,91 @@
+diff -Nru orig/tinyimg/src/Makevars new/tinyimg/src/Makevars
+--- orig/tinyimg/src/Makevars	2026-08-01 22:35:33
++++ new/tinyimg/src/Makevars	2026-08-01 22:47:30
+@@ -15,7 +15,7 @@
+ 	@echo "Using Rust compiler:"
+ 	@PATH="$(PATH):$(HOME)/.cargo/bin" rustc --version || echo "rustc not found in PATH"
+ 	# Extract vendored dependencies if present (for CRAN releases)
+-	@if [ -f ./rust/vendor.tar.xz ]; then \
++	@if [ -f ./rust/novendor.tar.xz ]; then \
+ 		echo "Extracting vendored dependencies..."; \
+ 		cd ./rust && tar xf vendor.tar.xz; \
+ 	fi
+diff -Nru orig/tinyimg/src/Makevars.win new/tinyimg/src/Makevars.win
+--- orig/tinyimg/src/Makevars.win	2026-08-01 22:35:33
++++ new/tinyimg/src/Makevars.win	2026-08-01 22:47:30
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = $(or $(CARGO_BUILD_TARGET),$(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu)
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/release
+@@ -17,7 +17,7 @@
+ 	@echo "Using Rust compiler:"
+ 	@rustc --version || echo "rustc not found in PATH"
+ 	# Extract vendored dependencies if present (for CRAN releases)
+-	@if [ -f ./rust/vendor.tar.xz ]; then \
++	@if [ -f ./rust/novendor.tar.xz ]; then \
+ 		echo "Extracting vendored dependencies..."; \
+ 		cd ./rust && tar xf vendor.tar.xz; \
+ 	fi
+diff -Nru orig/tinyimg/src/rust/Cargo.lock new/tinyimg/src/rust/Cargo.lock
+--- orig/tinyimg/src/rust/Cargo.lock	2026-08-01 22:35:33
++++ new/tinyimg/src/rust/Cargo.lock	2026-08-01 22:45:42
+@@ -83,21 +83,27 @@
+ 
+ [[package]]
+ name = "extendr-api"
+-version = "0.7.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "67505d96c7faa49d20e749dba7ba2447db52c40a788fd88cc2b6bef02c02277a"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
++ "extendr-ffi",
+  "extendr-macros",
+- "libR-sys",
+  "once_cell",
+  "paste",
+ ]
+ 
+ [[package]]
++name = "extendr-ffi"
++version = "0.8.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
++
++[[package]]
+ name = "extendr-macros"
+-version = "0.7.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "81b58838056f294411d0b2c35ac1a2b24c507d6828b75f2c1e74f00ee9b99267"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -142,12 +148,6 @@
+  "equivalent",
+  "hashbrown",
+ ]
+-
+-[[package]]
+-name = "libR-sys"
+-version = "0.7.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "06ac9752bc1e83f5a354a62b9e81bd8db4468b1008e29f262441e7f0e91e6bb3"
+ 
+ [[package]]
+ name = "libc"
+diff -Nru orig/tinyimg/src/rust/Cargo.toml new/tinyimg/src/rust/Cargo.toml
+--- orig/tinyimg/src/rust/Cargo.toml	2026-08-01 22:35:33
++++ new/tinyimg/src/rust/Cargo.toml	2026-08-01 22:45:38
+@@ -8,7 +8,7 @@
+ name = "tinyimg"
+ 
+ [dependencies]
+-extendr-api = "0.7"
++extendr-api = "0.8.2"
+ mozjpeg = { version = "0.10", default-features = false }
+ oxipng = { version = "9.1", default-features = false, features = ["filetime", "zopfli"] }
+ exoquant = "0.2.0"

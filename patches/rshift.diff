@@ -1,0 +1,125 @@
+diff -Nru orig/rshift/src/Makevars.win.in new/rshift/src/Makevars.win.in
+--- orig/rshift/src/Makevars.win.in	2026-08-01 23:26:33
++++ new/rshift/src/Makevars.win.in	2026-08-01 23:26:34
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -19,7 +19,7 @@
+ 	touch $(TARGET_DIR)/libgcc_mock/libgcc_eh.a
+ 
+ 	if [ "$(NOT_CRAN)" != "true" ]; then \
+-		if [ -f ./rust/vendor.tar.xz ]; then \
++		if [ -f ./rust/novendor.tar.xz ]; then \
+ 			tar xf rust/vendor.tar.xz && \
+ 			mkdir -p $(CARGOTMP) && \
+ 			cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+diff -Nru orig/rshift/src/rust/Cargo.lock new/rshift/src/rust/Cargo.lock
+--- orig/rshift/src/rust/Cargo.lock	2026-08-01 23:26:33
++++ new/rshift/src/rust/Cargo.lock	2026-08-01 23:30:08
+@@ -3,15 +3,10 @@
+ version = 4
+ 
+ [[package]]
+-name = "build-print"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4a2128d00b7061b82b72844a351e80acd29e05afc60e9261e2ac90dca9ecc2ac"
+-
+-[[package]]
+ name = "extendr-api"
+-version = "0.8.0"
+-source = "git+https://github.com/extendr/extendr#1a8fe4223d5deaab5ad50024246806559211a139"
++version = "0.8.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "extendr-ffi",
+  "extendr-macros",
+@@ -21,16 +16,15 @@
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.0"
+-source = "git+https://github.com/extendr/extendr#1a8fe4223d5deaab5ad50024246806559211a139"
+-dependencies = [
+- "build-print",
+-]
++version = "0.8.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.0"
+-source = "git+https://github.com/extendr/extendr#1a8fe4223d5deaab5ad50024246806559211a139"
++version = "0.8.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -39,9 +33,9 @@
+ 
+ [[package]]
+ name = "once_cell"
+-version = "1.19.0"
++version = "1.21.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
++checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+ 
+ [[package]]
+ name = "paste"
+diff -Nru orig/rshift/src/rust/Cargo.toml new/rshift/src/rust/Cargo.toml
+--- orig/rshift/src/rust/Cargo.toml	2026-08-01 23:26:33
++++ new/rshift/src/rust/Cargo.toml	2026-08-01 23:26:34
+@@ -7,13 +7,9 @@
+ crate-type = [ 'staticlib' ]
+ 
+ [dependencies]
+-extendr-api = "0.8.0"
++extendr-api = "0.8.2"
+ 
+ [profile.release]
+ opt-level = 'z'     # Optimize for size
+ lto = true          # Enable link-time optimization
+-
+-# to get patch and fix _abort issue
+-[patch.crates-io]
+-extendr-api = { git = "https://github.com/extendr/extendr" }
+ 
+diff -Nru orig/rshift/tools/config.R new/rshift/tools/config.R
+--- orig/rshift/tools/config.R	2026-08-01 23:26:33
++++ new/rshift/tools/config.R	2026-08-01 23:26:34
+@@ -6,7 +6,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -63,8 +63,19 @@
+ # read as a single string
+ mv_txt <- readLines(mv_fp)
+ 
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ # replace placeholder values
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _)

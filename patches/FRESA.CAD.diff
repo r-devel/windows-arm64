@@ -1,0 +1,13 @@
+diff --git a/src/Makevars.win b/src/Makevars.win
+index a4eb3ee..c9a4f58 100644
+--- a/FRESA.CAD/src/Makevars.win
++++ b/FRESA.CAD/src/Makevars.win
+@@ -1,6 +1,2 @@
+-ARCH_FLAG = -m32 
+-ifeq ($(R_ARCH),/x64) 
+-  ARCH_FLAG = -m64 
+-endif 
+-PKG_CXXFLAGS = $(ARCH_FLAG) $(SHLIB_OPENMP_CXXFLAGS)
+-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(ARCH_FLAG) $(SHLIB_OPENMP_CXXFLAGS)
++PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
++PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)

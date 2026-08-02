@@ -1,0 +1,142 @@
+diff --git a/ggsql/src/Makevars.win.in b/ggsql/src/Makevars.win.in
+index 5ab39bc..db3bfe5 100644
+--- a/ggsql/src/Makevars.win.in
++++ b/ggsql/src/Makevars.win.in
+@@ -1,9 +1,9 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WIN_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+ STATLIB = $(LIBDIR)/libggsql.a
+-PKG_LIBS = -L$(LIBDIR) -lggsql -lstdc++ -lbcrypt -ladvapi32 -lkernel32 -lntdll -luserenv -lws2_32 -ldbghelp -lrstrtmgr -lodbc32
++PKG_LIBS = -L$(LIBDIR) -lggsql @CXX_RUNTIME@ -lbcrypt -ladvapi32 -lkernel32 -lntdll -luserenv -lws2_32 -ldbghelp -lrstrtmgr -lodbc32
+ 
+ all: $(SHLIB) rust_clean
+ 
+@@ -24,7 +24,7 @@ $(STATLIB):
+ 		echo "=== Using offline vendor directory ==="; \
+ 		mkdir -p $(CARGOTMP) && \
+ 		cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+-	elif [ -f ./rust/vendor.tar.xz ]; then \
++	elif [ -f ./rust/novendor.tar.xz ]; then \
+ 		echo "=== Using offline vendor tarball ==="; \
+ 		tar xf rust/vendor.tar.xz && \
+ 		mkdir -p $(CARGOTMP) && \
+diff --git a/ggsql/src/rust/Cargo.lock b/ggsql/src/rust/Cargo.lock
+index 419e59a..a1a28d0 100644
+--- a/ggsql/src/rust/Cargo.lock
++++ b/ggsql/src/rust/Cargo.lock
+@@ -549,9 +549,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "extendr-api"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ea54977c6e37236839ffcbc20b5dcea58aa32ae43fbef54a81e1011dc6b19061"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "extendr-ffi",
+  "extendr-macros",
+@@ -561,15 +561,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c76777174a82bdb3e66872f580687d3d0143eed1df9b9cd72b321b9596a23ca7"
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "661cc4ae29de9c4dafe16cfcbda1dbb9f31bd2568f96ebad232cc1f9bcc8b04d"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff --git a/ggsql/src/rust/Cargo.toml b/ggsql/src/rust/Cargo.toml
+index 91f9f64..aaa6385 100644
+--- a/ggsql/src/rust/Cargo.toml
++++ b/ggsql/src/rust/Cargo.toml
+@@ -12,7 +12,7 @@ crate-type = ['staticlib']
+ name = 'ggsql'
+ 
+ [dependencies]
+-extendr-api = '0.8.1'
++extendr-api = '0.8.2'
+ ggsql = { version = "0.3.3", default-features = false, features = ["duckdb", "odbc", "vegalite", "builtin-data"] }
+ arrow = { version = "56", default-features = false, features = ["ipc"] }
+ serde_json = "1.0"
+diff --git a/ggsql/src/rust/build-env-win.sh b/ggsql/src/rust/build-env-win.sh
+index 5777673..0eb6a37 100644
+--- a/ggsql/src/rust/build-env-win.sh
++++ b/ggsql/src/rust/build-env-win.sh
+@@ -5,3 +5,17 @@
+ # flag text does not land in 00install.out and trip R CMD check's
+ # non-portable-flag scan.
+ export CXXFLAGS="${CXXFLAGS} -Wa,-mbig-obj"
++
++# On Windows arm64 the host rustc triple is aarch64-pc-windows-msvc, and
++# cargo compiles build scripts (libduckdb-sys -> reqwest -> rustls -> ring)
++# for that host triple. ring's build.rs hardcodes clang as its C compiler on
++# Windows aarch64, but the clang shipped with Rtools (llvm-mingw) has no MSVC
++# sysroot, so <assert.h> is not found. cc-rs appends per-target env CFLAGS
++# after its own flags, so this trailing --target wins and redirects those
++# host-only objects to the mingw sysroot that Rtools clang does have; the
++# resulting COFF objects link fine into the build-script executables.
++# Skipped when a real MSVC environment (INCLUDE) is available.
++host_triple=$(rustc -vV 2>/dev/null | sed -n 's/^host: //p')
++if [ "$host_triple" = "aarch64-pc-windows-msvc" ] && [ -z "${INCLUDE}" ]; then
++  export CFLAGS_aarch64_pc_windows_msvc="--target=aarch64-w64-mingw32"
++fi
+diff --git a/ggsql/tools/config.R b/ggsql/tools/config.R
+index d2231a5..a5827ee 100644
+--- a/ggsql/tools/config.R
++++ b/ggsql/tools/config.R
+@@ -9,7 +9,7 @@ env_debug <- Sys.getenv("DEBUG")
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -63,6 +63,23 @@ cfg <- if (is_debug) "debug" else "release"
+ # there may be use cases later where this can be adapted or expanded
+ .target <- ifelse(is_wasm, paste0("--target=", webr_target), "")
+ 
++# used to replace @WIN_TARGET@ in Makevars.win.in. R on Windows arm64
++# (aarch64-w64-mingw32) uses the llvm-mingw toolchain, which maps to the
++# gnullvm Rust target; x86_64/i686 keep deriving the -gnu target from $(WIN).
++.windows_target <- if(grepl("aarch", R.version$platform)){
++  "aarch64-pc-windows-gnullvm"
++} else if(grepl("clang", Sys.getenv('R_COMPILED_BY'))){
++  "x86_64-pc-windows-gnullvm"
++} else if(grepl("i386", R.version$platform)){
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++# used to replace @CXX_RUNTIME@ in Makevars.win.in: the DuckDB C++ objects
++# inside libggsql.a need the C++ runtime at link time. Rtools on arm64 is
++# llvm-mingw, which ships libc++ instead of libstdc++.
++.cxx_runtime <- ifelse(grepl('gnullvm', .windows_target), "-lc++", "-lstdc++")
++
+ # add panic exports only for WASM builds
+ .panic_exports <- ifelse(
+   is_wasm,
+@@ -172,6 +189,8 @@ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _) |>
+   gsub("@TARGET@", .target, x = _) |>
++  gsub("@WIN_TARGET@", .windows_target, x = _, fixed = TRUE) |>
++  gsub("@CXX_RUNTIME@", .cxx_runtime, x = _, fixed = TRUE) |>
+   gsub("@PANIC_EXPORTS@", .panic_exports, x = _) |>
+   gsub("@MACOSX_TARGET@", .macos_target, x = _) |>
+   gsub("@ODBC_LIBS@", .odbc_libs, x = _)

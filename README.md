@@ -45,6 +45,19 @@ The R-universe website also shows CMD-check results for the packages, for exampl
 Note that only R packages which contain compiled (C/C++/Fortran/Rust) code are built for ARM64. For packages containing solely R code, there is no difference between x86_64 and arm64 binary, so we build only on x86_64 and serve the same binary to both architectures. This holds both for Windows and Linux.
 
 
+## Install-time patches
+
+The [patches](https://github.com/r-devel/windows-arm64/tree/main/patches) folder contains a set of install-time patches to fix some CRAN and BioConductor packages that are currently broken, using the same format as [the patches from Tomáš](https://www.r-project.org/nosvn/winutf8/ucrt3/patches_aarch64/patches/). This makes it possible to build and check other packages that depend on these (currently broken) packages.
+
+To activate these patches in R you need to set this environment variable before building packages from source. It is not needed when you install binary packages.
+
+```r
+Sys.setenv("_R_INSTALL_TIME_PATCHES_" = "http://contributor.r-project.org/windows-arm64/patches")
+```
+
+For packages that have a public Git repository, the patches have proposed upstream as pull requests. Once the fix lands on CRAN, we can remove the install patch from here, but sometimes this takes a while.
+
+
 ## Rust Support
 
 Rust is fully supported. As 2025 the `aarch64-pc-windows-gnullvm` target (which is what rtools45 needs) has [tier-2 status](https://doc.rust-lang.org/stable/rustc/platform-support/windows-gnullvm.html), so we can install the toolchain using rustup:

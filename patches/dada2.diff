@@ -1,0 +1,10 @@
+diff --git a/dada2/src/Makevars.win b/dada2/src/Makevars.win
+index 91ca331..6efbd62 100644
+--- a/dada2/src/Makevars.win
++++ b/dada2/src/Makevars.win
+@@ -1,5 +1,2 @@
+ PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
+ CXX_STD = CXX11
+-PKG_CPPFLAGS += -msse2
+-PKG_CFLAGS += -msse2
+-PKG_CXXFLAGS += -msse2

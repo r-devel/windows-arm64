@@ -1,0 +1,139 @@
+diff -Nru orig/libipldr/src/Makevars.win.in new/libipldr/src/Makevars.win.in
+--- orig/libipldr/src/Makevars.win.in	2026-08-01 22:35:33
++++ new/libipldr/src/Makevars.win.in	2026-08-01 22:37:06
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -18,7 +18,7 @@
+ 	mkdir -p $(TARGET_DIR)/libgcc_mock
+ 	touch $(TARGET_DIR)/libgcc_mock/libgcc_eh.a
+ 
+-	if [ -f ./rust/vendor.tar.xz ]; then \
++	if [ -f ./rust/novendor.tar.xz ]; then \
+ 		tar xf rust/vendor.tar.xz && \
+ 		mkdir -p $(CARGOTMP) && \
+ 		cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+diff -Nru orig/libipldr/src/rust/Cargo.lock new/libipldr/src/rust/Cargo.lock
+--- orig/libipldr/src/rust/Cargo.lock	2026-08-01 22:35:33
++++ new/libipldr/src/rust/Cargo.lock	2026-08-01 23:08:09
+@@ -120,11 +120,12 @@
+ 
+ [[package]]
+ name = "cc"
+-version = "1.0.83"
++version = "1.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
++checksum = "5add81bb678e6cb321aff7fa0dc7689ad82b112dbc032cea19f91d6b8e3582b9"
+ dependencies = [
+- "libc",
++ "find-msvc-tools",
++ "shlex",
+ ]
+ 
+ [[package]]
+@@ -218,9 +219,9 @@
+ 
+ [[package]]
+ name = "extendr-api"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ea54977c6e37236839ffcbc20b5dcea58aa32ae43fbef54a81e1011dc6b19061"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "extendr-ffi",
+  "extendr-macros",
+@@ -230,15 +231,15 @@
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c76777174a82bdb3e66872f580687d3d0143eed1df9b9cd72b321b9596a23ca7"
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "661cc4ae29de9c4dafe16cfcbda1dbb9f31bd2568f96ebad232cc1f9bcc8b04d"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -246,6 +247,12 @@
+ ]
+ 
+ [[package]]
++name = "find-msvc-tools"
++version = "0.1.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
++
++[[package]]
+ name = "fnv"
+ version = "1.0.7"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -712,6 +719,12 @@
+  "digest",
+  "keccak",
+ ]
++
++[[package]]
++name = "shlex"
++version = "2.0.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+ 
+ [[package]]
+ name = "slab"
+diff -Nru orig/libipldr/src/rust/Cargo.toml new/libipldr/src/rust/Cargo.toml
+--- orig/libipldr/src/rust/Cargo.toml	2026-08-01 22:35:33
++++ new/libipldr/src/rust/Cargo.toml	2026-08-01 22:37:17
+@@ -13,7 +13,7 @@
+ name = 'libipldr'
+ 
+ [dependencies]
+-extendr-api = '0.8.1'
++extendr-api = '0.8.2'
+ libipld = { version = "0.16.0", features = ["dag-cbor", "dag-json", "dag-pb", "derive"] }
+ anyhow = "1.0.75"
+ futures = "0.3"
+diff -Nru orig/libipldr/tools/config.R new/libipldr/tools/config.R
+--- orig/libipldr/tools/config.R	2026-08-01 22:35:33
++++ new/libipldr/tools/config.R	2026-08-01 22:37:06
+@@ -9,7 +9,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -96,8 +96,19 @@
+ # read as a single string
+ mv_txt <- readLines(mv_fp)
+ 
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ # replace placeholder values
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _) |>

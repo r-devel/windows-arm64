@@ -1,0 +1,32 @@
+diff --git a/src/Makevars.in b/src/Makevars.in
+index d621634..267e1e6 100644
+--- a/xgboost/src/Makevars.in
++++ b/xgboost/src/Makevars.in
+@@ -14,11 +14,6 @@ XGB_RFLAGS = \
+     -DDMLC_ENABLE_STD_THREAD=$(ENABLE_STD_THREAD) \
+     -DDMLC_DISABLE_STDIN=1 \
+     -DDMLC_LOG_CUSTOMIZE=1
+-
+-# disable the use of thread_local for 32 bit windows:
+-ifeq ($(R_OSTYPE)$(WIN),windows)
+-    XGB_RFLAGS += -DDMLC_CXX11_THREAD_LOCAL=0
+-endif
+ $(foreach v, $(XGB_RFLAGS), $(warning $(v)))
+ 
+ PKG_CPPFLAGS = \
+diff --git a/src/Makevars.win.in b/src/Makevars.win.in
+index 567f9b4..bad2aa6 100644
+--- a/xgboost/src/Makevars.win.in
++++ b/xgboost/src/Makevars.win.in
+@@ -11,11 +11,6 @@ XGB_RFLAGS = \
+     -DDMLC_ENABLE_STD_THREAD=$(ENABLE_STD_THREAD) \
+     -DDMLC_DISABLE_STDIN=1 \
+     -DDMLC_LOG_CUSTOMIZE=1
+-
+-# disable the use of thread_local for 32 bit windows:
+-ifeq ($(R_OSTYPE)$(WIN),windows)
+-    XGB_RFLAGS += -DDMLC_CXX11_THREAD_LOCAL=0
+-endif
+ $(foreach v, $(XGB_RFLAGS), $(warning $(v)))
+ 
+ PKG_CPPFLAGS = \

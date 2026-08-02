@@ -1,0 +1,39 @@
+diff --git a/configure b/configure
+index de7f5c3..25976c1 100755
+--- a/RProtoBufLib/configure
++++ b/RProtoBufLib/configure
+@@ -2883,7 +2883,7 @@ else
+ fi;
+ 
+ cd ${BASEPBNAME};
+-./configure --enable-static=no --with-pic=yes --enable-shared=yes --prefix="${PBBUILD}" --libdir="${PBBUILD}/lib" CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" CC="${CC}" CFLAGS="${CFLAGS}"
++./configure --enable-static=yes --with-pic=yes --enable-shared=yes --prefix="${PBBUILD}" --libdir="${PBBUILD}/lib" CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" CC="${CC}" CFLAGS="${CFLAGS}"
+ $MAKE install
+ 
+ cd ../../
+diff --git a/configure.ac b/configure.ac
+index b9b4a26..0343895 100644
+--- a/RProtoBufLib/configure.ac
++++ b/RProtoBufLib/configure.ac
+@@ -51,7 +51,7 @@ else
+ fi;
+ 
+ cd ${BASEPBNAME};
+-./configure --enable-static=no --with-pic=yes --enable-shared=yes --prefix="${PBBUILD}" --libdir="${PBBUILD}/lib" CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" CC="${CC}" CFLAGS="${CFLAGS}"
++./configure --enable-static=yes --with-pic=yes --enable-shared=yes --prefix="${PBBUILD}" --libdir="${PBBUILD}/lib" CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" CC="${CC}" CFLAGS="${CFLAGS}"
+ $MAKE install 
+ 
+ cd ../../
+diff --git a/configure.win b/configure.win
+index e3c0083..6adfd5a 100644
+--- a/RProtoBufLib/configure.win
++++ b/RProtoBufLib/configure.win
+@@ -10,7 +10,7 @@ if [ X$ARCH != Xx86_64 ] ; then
+   fi
+   cp src/Makevars src/Makevars.ucrt
+   sed -i -e 's!GS_LIB =.*!GS_LIB = GatingSet.pb.o!g' \
+-         -e 's!libprotobuf\* !libprotobuf.a !g' \
++         -e 's!libprotobuf\* ${USER_LIB_DIR}!libprotobuf.lib ${USER_LIB_DIR}/libprotobuf.a!g' \
+          -e 's!.*GatingSet.pb.cc.*!	${CXX} ${CXXPICFLAGS} ${PKG_CPPFLAGS} -o ${GS_LIB_DIR}/${GS_LIB} -c ${GS_LIB_DIR}/GatingSet.pb.cc!g' \
+          -e 's!libGatingSet.pb${DYLIB_EXT}!GatingSet.pb.o!g' \
+          src/Makevars.ucrt

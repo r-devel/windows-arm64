@@ -1,0 +1,16 @@
+diff --git a/SNPRelate/src/ThreadPool.h b/SNPRelate/src/ThreadPool.h
+index 63b876c..c506056 100755
+--- a/SNPRelate/src/ThreadPool.h
++++ b/SNPRelate/src/ThreadPool.h
+@@ -37,6 +37,11 @@
+ 
+ #ifdef COREARRAY_PLATFORM_WINDOWS
+ #   include <windows.h>
++    // <windows.h> defines TRUE/FALSE as integer macros, which shadow R's
++    // Rboolean enumerators and break calls such as R_useDynamicSymbols(info,
++    // FALSE) under R-devel. Undefine them so R's Rboolean values are used.
++#   undef TRUE
++#   undef FALSE
+ #endif
+ #ifdef COREARRAY_POSIX_THREAD
+ #   include <pthread.h>
