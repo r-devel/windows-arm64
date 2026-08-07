@@ -11,9 +11,7 @@ Base R installers are built daily on GitHub actions using the [r-devel/actions](
  - R-patched: https://github.com/r-devel/windows-arm64/releases/tag/next
  - R-release: https://github.com/r-devel/windows-arm64/releases/tag/4.6.1
 
-Because R officially does not support arm64 on Windows yet, an unpatched build would install x86_64 binary packages which leads to disaster.
-
-Therefore this build is [modified](https://github.com/r-devel/actions/blob/main/build-r-windows/winarm64.patch) to download binary packages on CRAN-like package repositories not from `/bin/windows/contrib/` but instead from  `/bin/windows/clang-aarch64/contrib/`:
+Because R officially does not support arm64 on Windows yet, an unpatched build would install x86_64 binary packages which leads to disaster. Therefore this build is [modified](https://github.com/r-devel/actions/blob/main/build-r-windows/winarm64.patch) to download binary packages on CRAN-like package repositories not from `/bin/windows/contrib/` but instead from  `/bin/windows/clang-aarch64/contrib/`:
 
  - https://cran.r-universe.dev/bin/windows/clang-aarch64/contrib/4.7/PACKAGES
  - https://bioc.r-universe.dev/bin/windows/clang-aarch64/contrib/4.7/PACKAGES
