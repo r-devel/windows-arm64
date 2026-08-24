@@ -45,7 +45,7 @@ Note that only R packages which contain compiled (C/C++/Fortran/Rust) code are b
 
 ## Install-time patches
 
-The [patches](https://github.com/r-devel/windows-arm64/tree/main/patches) folder contains a set of install-time patches to fix some CRAN and BioConductor packages that are currently broken, using the same format as [the patches from Tomáš](https://www.r-project.org/nosvn/winutf8/ucrt3/patches_aarch64/patches/). This makes it possible to build and check other packages that depend on these (currently broken) packages.
+The [patches](https://github.com/r-devel/windows-arm64/tree/main/patches) folder contains a set of install-time patches to fix some CRAN and BioConductor packages that are currently broken, using the same format as [the patches from Tomáš](https://web.archive.org/web/20260124133034/https://www.r-project.org/nosvn/winutf8/ucrt3/patches/). This makes it possible to build and check other packages that depend on these (currently broken) packages.
 
 To activate these patches in R you need to set this environment variable before building packages from source. It is not needed when you install binary packages.
 
