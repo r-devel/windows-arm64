@@ -47,7 +47,7 @@ diff -Nru orig/arrow/tools/winlibs.R new/arrow/tools/winlibs.R
 +# Download static build of libarrow + dependencies from:
 +# https://github.com/r-windows/bundles/releases
 +if (!file.exists("windows/arrow/include/arrow/api.h")) {
-+  bundle <- "25.0.0"
++  bundle <- "25.0.1"
 +  if (grepl("aarch64", R.version$platform)) {
 +    toolchain <- "clang-aarch64"
 +  } else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
