@@ -1,6 +1,6 @@
 diff -Nru orig/arrow/configure.win new/arrow/configure.win
---- orig/arrow/configure.win	2026-07-27 20:58:26
-+++ new/arrow/configure.win	2026-07-27 20:58:57
+--- orig/arrow/configure.win	2026-10-09 12:24:06
++++ new/arrow/configure.win	2026-10-11 15:12:00
 @@ -48,8 +48,9 @@
  
  
@@ -13,8 +13,8 @@ diff -Nru orig/arrow/configure.win new/arrow/configure.win
    # If binary not found, script exits nonzero
    if [ $? -ne 0 ]; then
      _LIBARROW_FOUND="false"
-@@ -69,15 +70,7 @@
-             -lz -lws2_32 -lnghttp2 -ldbghelp"
+@@ -70,15 +71,7 @@
+   # AZURE_LIBS="-lcurl -lssl -lxml2"
  
    # Set the right flags to point to and enable arrow/parquet
 -  if [ -d "windows/r-libarrow-windows-x86_64-$VERSION" ]; then
@@ -30,24 +30,24 @@ diff -Nru orig/arrow/configure.win new/arrow/configure.win
  
    # NOTE: If you make changes to the libraries below, you should also change
    # ci/scripts/r_windows_build.sh and ci/scripts/PKGBUILD
-@@ -85,8 +78,7 @@
-               -DARROW_DS_STATIC -DARROW_ACERO_STATIC -DARROW_R_WITH_PARQUET \
-               -DARROW_R_WITH_COMPUTE -DARROW_R_WITH_ACERO \
-               -DARROW_R_WITH_DATASET -DARROW_R_WITH_JSON"
+@@ -87,8 +80,7 @@
+               -DARROW_R_WITH_PARQUET -DARROW_R_WITH_COMPUTE -DARROW_R_WITH_ACERO \
+               -DARROW_R_WITH_DATASET -DARROW_R_WITH_JSON \
+               -DARROW_R_WITH_S3 -DARROW_R_WITH_GCS" # -DARROW_R_WITH_AZURE
 -  PKG_LIBS="-L${RWINLIB}/lib"'$(subst gcc,,$(COMPILED_BY))$(R_ARCH) '
 -  PKG_LIBS="$PKG_LIBS -L${RWINLIB}/lib"'$(R_ARCH)$(CRT) '
 +  PKG_LIBS="-L${RWINLIB}/lib"
-   PKG_LIBS="$PKG_LIBS -larrow_dataset -larrow_acero -lparquet -larrow_compute -larrow -larrow_bundled_dependencies \
+   PKG_LIBS="$PKG_LIBS -larrow_dataset -larrow_acero -lparquet -larrow_compute -larrow_s3 -larrow -larrow_bundled_dependencies \
              -lutf8proc -lsnappy -lz -lzstd -llz4 -lbz2 ${BROTLI_LIBS} -lole32 \
-             ${MIMALLOC_LIBS} ${OPENSSL_LIBS}"
+             ${MIMALLOC_LIBS} ${OPENSSL_LIBS} -lre2 ${AWS_LIBS} ${GCS_LIBS}" # ${AZURE_LIBS}
 diff -Nru orig/arrow/tools/winlibs.R new/arrow/tools/winlibs.R
 --- orig/arrow/tools/winlibs.R	1970-01-01 01:00:00
-+++ new/arrow/tools/winlibs.R	2026-07-27 20:58:57
++++ new/arrow/tools/winlibs.R	2026-10-11 15:12:08
 @@ -0,0 +1,24 @@
 +# Download static build of libarrow + dependencies from:
 +# https://github.com/r-windows/bundles/releases
 +if (!file.exists("windows/arrow/include/arrow/api.h")) {
-+  bundle <- "25.0.0"
++  bundle <- "26.0.0"
 +  if (grepl("aarch64", R.version$platform)) {
 +    toolchain <- "clang-aarch64"
 +  } else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
