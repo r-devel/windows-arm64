@@ -116,8 +116,11 @@ gh run watch $(gh run list --workflow test-patches.yaml --limit 1 --json databas
 The workflow is on `main`. Group packages into a few runs (e.g. by kind of fix) so they run in parallel.
 Each package gets a `##[notice]<pkg>: OK/FAILED` line; grep for that in `gh run view <id> --log`.
 Caveats:
-- It tests R-release only. Failures specific to R-devel (e.g. the `aarch64-w64-mingw32-flang` linker
-  issue behind x13binary, cepreader, Uno) build fine there with or without the patch.
+- It tests R-release only. Failures specific to R-devel build fine there with or without the patch.
+  Known R-devel issue: Fortran programs linked with `aarch64-w64-mingw32-flang` (x13binary, cepreader,
+  Uno) fail. That compiler name makes flang act like a gcc toolchain: it uses the x86_64 `ld` from PATH,
+  and with `-fuse-ld=lld` it needs `-lgcc`/`-lgcc_eh`, which don't exist. This needs fixing in R-devel's
+  Makeconf/toolchain (R-release uses plain `flang` and works); don't patch packages for it.
 - Some packages (e.g. ones building bundled libraries) take 20+ minutes. Don't assume a run is hung
   just because it is slow; check the streamed log.
 - Packages whose dependencies have no arm64 binary yet will be built from source as dependencies.
@@ -159,3 +162,63 @@ Keep it short:
 - packages whose fix should go upstream (the patch is only a stopgap until the fix lands on CRAN/BioC)
 
 Do not commit, push or merge unless the user asks. After a merge the user approved, do Step 6 right away.
+
+## Step 8: send fixes upstream (once the retries have finished)
+
+A patch is only a stopgap: the real fix belongs in the package. For patches that fixed the build in the
+Step 6 retry, send a pull request to the upstream repository. **Be careful and conservative**: package
+authors don't like bad or spammy PRs, and every PR goes out under the user's name. When in doubt, skip it
+and write down why in `scripts/upstream-prs.md`.
+
+1. Run `Rscript scripts/upstream-candidates.R` (writes `scripts/output/upstream-candidates.csv`).
+   Candidates are packages where the arm64 job failed before the retry and succeeded in the retry with
+   `Applied installation-time patch` in the log, which have no row in `upstream-prs.md` yet and no earlier
+   PR of ours in the repo (column `prs`). For packages that do have an earlier PR, check if it covers
+   this issue; if so add a row for it (`merged` if it was merged but is not on CRAN/BioC yet).
+2. Find the upstream repository where development actually happens. Start from `devurl` (from
+   r-universe), and the `URL`/`BugReports` fields in DESCRIPTION. Verify it:
+   - it is the package: the `DESCRIPTION` has the same `Package:` (possibly in a subdirectory);
+   - development happens there: not archived, recent commits by the maintainers, version on the default
+     branch >= the CRAN version. For Bioconductor, compare against the maintainers' own commits instead:
+     Bioconductor bumps versions automatically in its own git, which GitHub repos often don't merge.
+     Read-only mirrors (`github.com/cran/*`, `github.com/bioc/*`) don't count.
+   - Only GitHub repositories (we use `gh`). For other hosts, note the URL with status `skip` so the
+     user can decide.
+   If there is no such repository: add a row with status `skip` and a note (for Bioconductor packages
+   include the maintainer from DESCRIPTION, so the user can decide to email them), and move on.
+   The GitHub search API is rate limited; `gh pr list -R <repo> --state all --search ...` and
+   `gh issue list` work as a fallback.
+3. Verify the fix is still needed and not already proposed:
+   - Shallow clone the default branch and dry-run the patch on it (`gpatch --dry-run -p2` from the package
+     directory). If it applies in reverse, or the code was fixed in another way: status `skip`, note
+     "fixed upstream, not yet released".
+   - Search existing PRs and issues: `gh search prs --repo <repo> arm64`, also `aarch64` and the error
+     message. If someone (including us) already has an open PR for this issue: `skip` with a link.
+4. Prepare the change in a fork (`gh repo fork <repo> --clone=false`, clone it, branch `windows-arm64`):
+   - Apply the patch. Adapt it where the repository differs from the CRAN tarball (e.g. files that are
+     generated at release time, like `configure` from `configure.ac`, or vendored Rust crate tarballs:
+     change the sources, not the generated files). Keep the diff minimal: no version bumps, NEWS entries,
+     reformatting or unrelated changes.
+   - One commit, authored by the user: `git -c user.name="Jeroen Ooms" -c user.email="jeroenooms@gmail.com" commit`.
+     One-line message: `Fix build on Windows ARM64`, optionally with a few words why, e.g.
+     `Fix build on Windows ARM64: replace removed std::random_shuffle`.
+     No `Co-Authored-By` or other Claude/AI attribution, in commits or PR text (the user's explicit wish).
+5. Write the PR. Title: `Fix build on Windows ARM64`. Body, concise like the user's earlier PRs
+   (e.g. https://github.com/thomasp85/waysign/pull/4):
+   ```
+   This fixes the build on Windows ARM64. <1-3 lines: what was the problem and what this changes>
+
+   Before (without this patch): <failing arm64 job URL from the 'before' column>
+   After (with this patch): <successful arm64 job URL from the 'after' column>
+
+   For more details see https://github.com/r-devel/windows-arm64
+   ```
+6. **Ask the user before opening any PR**: show the list (package, repository, one-line description of
+   the change) and one or two full drafts. After approval, push the branch to the fork and open the PR:
+   `gh pr create -R <repo> --head jeroen:windows-arm64 --title "..." --body "..."`. Never more than one
+   PR per repository for the same issue.
+7. Record every package in `scripts/upstream-prs.md` (PR URL and `opened`, or `skip` with the reason).
+
+On every maintenance run, also update the tracking table: refresh the state of open PRs with
+`gh pr view <url> --json state,mergedAt`, and mark a PR `landed` when `update.R` retires the patch
+because it is fixed upstream (move the row's patch to `patches/old` as usual).
