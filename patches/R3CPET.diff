@@ -1,0 +1,36 @@
+diff -Nru orig/R3CPET/src/state.cpp new/R3CPET/src/state.cpp
+--- orig/R3CPET/src/state.cpp	2026-10-05 15:21:27
++++ new/R3CPET/src/state.cpp	2026-10-11 16:53:22
+@@ -1,8 +1,20 @@
+ #include <assert.h>
+ #include <algorithm>
++#include <cstdlib>
+ #include "state.h"
+ 
++// std::random_shuffle was removed in C++17 and is not available in libc++ (clang).
++// Same algorithm as libstdc++, so results are unchanged.
++template <class RandomIt>
++static void random_shuffle_compat(RandomIt first, RandomIt last) {
++  if (first == last) return;
++  for (RandomIt i = first + 1; i != last; ++i) {
++    RandomIt j = first + std::rand() % ((i - first) + 1);
++    if (i != j) std::iter_swap(i, j);
++  }
++}
+ 
++
+ DocState::DocState() {
+   //words_ = NULL;
+ }
+@@ -168,9 +180,9 @@
+ 
+ int HDP::iterate_gibbs_state(bool remove, bool permute) {
+  if (permute) { // Permute data.     
+-	std::random_shuffle ( doc_states_.begin(), doc_states_.end() );	
++	random_shuffle_compat ( doc_states_.begin(), doc_states_.end() );	
+     for (int j = 0; j < num_docs_; ++j)
+-      std::random_shuffle ( doc_states_[j]->words_.begin(), doc_states_[j]->words_.end() );
++      random_shuffle_compat ( doc_states_[j]->words_.begin(), doc_states_[j]->words_.end() );
+   }
+ 
+   sample_top_level_proportions();

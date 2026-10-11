@@ -1,0 +1,10 @@
+diff -Nru orig/scider/src/rand.cpp new/scider/src/rand.cpp
+--- orig/scider/src/rand.cpp	2026-09-16 13:20:12
++++ new/scider/src/rand.cpp	2026-10-11 16:52:19
+@@ -1,5 +1,5 @@
+-#include "rand.h"
+ #include "iostream"
++#include "rand.h"
+ 
+ //// PCG-PRNG by 2014 M.E. O'Neill / pcg-random.org
+ // This is the minimal pcg32 one-stream rng (64-bits states to 32-bits output) 

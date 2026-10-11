@@ -1,0 +1,14 @@
+diff -Nru orig/mdbx/src/vendor/libmdbx/mdbx.c new/mdbx/src/vendor/libmdbx/mdbx.c
+--- orig/mdbx/src/vendor/libmdbx/mdbx.c	2026-09-28 18:07:28
++++ new/mdbx/src/vendor/libmdbx/mdbx.c	2026-10-11 17:00:25
+@@ -29893,7 +29893,9 @@
+       if (seh->Registration.Handler == mdbx_simple_SEH &&
+           (seh->filter == pExceptionRecord->ExceptionCode ||
+            (seh->filter == EXCEPTION_ACCESS_VIOLATION && pExceptionRecord->ExceptionCode == EXCEPTION_IN_PAGE_ERROR))) {
+-#ifdef _WIN64
++#if defined(_M_ARM64) || defined(__aarch64__)
++        pContextRecord->Pc = (uintptr_t)seh->recovery;
++#elif defined(_WIN64)
+         pContextRecord->Rip = (uintptr_t)seh->recovery;
+ #else
+         pContextRecord->Eip = (uintptr_t)seh->recovery;

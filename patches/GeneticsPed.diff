@@ -1,0 +1,18 @@
+diff -Nru orig/GeneticsPed/src/Makevars.win new/GeneticsPed/src/Makevars.win
+--- orig/GeneticsPed/src/Makevars.win	1970-01-01 01:00:00
++++ new/GeneticsPed/src/Makevars.win	2026-10-11 16:52:19
+@@ -0,0 +1,2 @@
++# Avoid clash of R macros (e.g. length) with libc++ headers
++PKG_CPPFLAGS = -DR_NO_REMAP=
+diff -Nru orig/GeneticsPed/src/sortped.cc new/GeneticsPed/src/sortped.cc
+--- orig/GeneticsPed/src/sortped.cc	2026-10-01 15:13:04
++++ new/GeneticsPed/src/sortped.cc	2026-10-11 16:52:19
+@@ -52,7 +52,7 @@
+   }
+   if( ped_problem )
+   {
+-    error("Problems in pedigree.  Stopping inbreeding calculations\n");
++    Rf_error("Problems in pedigree.  Stopping inbreeding calculations\n");
+   }
+ 
+   // remove duplicates from sire

@@ -1,0 +1,12 @@
+diff -Nru orig/crc32c/src/Makevars.win new/crc32c/src/Makevars.win
+--- orig/crc32c/src/Makevars.win	2026-10-07 15:22:06
++++ new/crc32c/src/Makevars.win	2026-10-11 16:53:46
+@@ -16,7 +16,7 @@
+ $(XTRA_LIB):
+ 	mkdir crc32c/build && \
+ 		cd crc32c/build && \
+-		${CMAKE} .. && \
++		CC="$(CC)" CXX="$(CXX)" ${CMAKE} .. && \
+ 		${MAKE} all && \
+ 		cp -v libcrc32c.a .. && \
+ 		rm -rf *

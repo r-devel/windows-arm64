@@ -1,0 +1,14 @@
+diff -Nru orig/ISoLDE/src/Isolde.c new/ISoLDE/src/Isolde.c
+--- orig/ISoLDE/src/Isolde.c	2026-10-11 12:50:24
++++ new/ISoLDE/src/Isolde.c	2026-10-11 16:52:19
+@@ -9,7 +9,10 @@
+ #include <stdlib.h>
+ #include <Rdefines.h>
+ #ifdef _OPENMP
++    #pragma push_macro("match")
++    #undef match
+     #include <omp.h>
++    #pragma pop_macro("match")
+ #endif  
+ #include <R_ext/Rdynload.h>
+ 

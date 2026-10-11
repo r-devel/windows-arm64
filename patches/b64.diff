@@ -1,0 +1,100 @@
+diff -Nru orig/b64/src/Makevars.win.in new/b64/src/Makevars.win.in
+--- orig/b64/src/Makevars.win.in	2026-09-16 13:19:35
++++ new/b64/src/Makevars.win.in	2026-10-11 16:53:06
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -18,7 +18,7 @@
+ 	mkdir -p $(TARGET_DIR)/libgcc_mock
+ 	touch $(TARGET_DIR)/libgcc_mock/libgcc_eh.a
+ 
+-	if [ -f ./rust/vendor.tar.xz ]; then \
++	if [ -f ./rust/novendor.tar.xz ]; then \
+ 		tar xf rust/vendor.tar.xz && \
+ 		mkdir -p $(CARGOTMP) && \
+ 		cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+diff -Nru orig/b64/src/rust/Cargo.lock new/b64/src/rust/Cargo.lock
+--- orig/b64/src/rust/Cargo.lock	2026-09-16 13:19:35
++++ new/b64/src/rust/Cargo.lock	2026-10-11 16:53:06
+@@ -18,12 +18,6 @@
+ checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
+ 
+ [[package]]
+-name = "build-print"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4a2128d00b7061b82b72844a351e80acd29e05afc60e9261e2ac90dca9ecc2ac"
+-
+-[[package]]
+ name = "either"
+ version = "1.15.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -31,9 +25,9 @@
+ 
+ [[package]]
+ name = "extendr-api"
+-version = "0.8.1"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ea54977c6e37236839ffcbc20b5dcea58aa32ae43fbef54a81e1011dc6b19061"
++checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
+ dependencies = [
+  "either",
+  "extendr-ffi",
+@@ -44,18 +38,15 @@
+ 
+ [[package]]
+ name = "extendr-ffi"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b48f96b7a4a2ff009ad9087f22a6de2312731a4096b520e3eb1c483df476ae95"
+-dependencies = [
+- "build-print",
+-]
++checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
+ 
+ [[package]]
+ name = "extendr-macros"
+-version = "0.8.0"
++version = "0.8.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fdbbac9afddafddb4dabd10aefa8082e3f057ec5bfa519c7b44af114e7ebf1a5"
++checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff -Nru orig/b64/tools/config.R new/b64/tools/config.R
+--- orig/b64/tools/config.R	2026-09-16 13:19:35
++++ new/b64/tools/config.R	2026-10-11 16:53:06
+@@ -9,7 +9,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -90,7 +90,18 @@
+ mv_txt <- readLines(mv_fp)
+ 
+ # replace placeholder values
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _) |>

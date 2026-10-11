@@ -1,0 +1,30 @@
+diff -Nru orig/slalom/src/slalom-classes.cpp new/slalom/src/slalom-classes.cpp
+--- orig/slalom/src/slalom-classes.cpp	2026-09-14 11:23:34
++++ new/slalom/src/slalom-classes.cpp	2026-10-11 16:53:22
+@@ -242,6 +242,17 @@
+ // [0,n) as required by the STL algorithm
+ inline int randWrapper(const int n) { return floor(unif_rand() * n); }
+ 
++// std::random_shuffle was removed in C++17 and is not available in libc++ (clang).
++// Same algorithm as libstdc++, so results are unchanged.
++template <class RandomIt, class RandomFunc>
++static void random_shuffle_compat(RandomIt first, RandomIt last, RandomFunc&& r) {
++  if (first == last) return;
++  for (RandomIt i = first + 1; i != last; ++i) {
++    RandomIt j = first + r((i - first) + 1);
++    if (i != j) std::iter_swap(i, j);
++  }
++}
++
+ void SlalomModel::update(void) {
+     /*
+      Do one update of weights (with spike-and-slab prior), ARD parameters, factors, annd noise parameters.
+@@ -259,7 +270,7 @@
+     if (this->shuffle == true && this->iterationCount > 1) {
+         arma::uvec kunfix = arma::regspace<arma::uvec>(this->nKnown,
+                                                        (this->K - 1));
+-        std::random_shuffle(kunfix.begin(), kunfix.end(), randWrapper);
++        random_shuffle_compat(kunfix.begin(), kunfix.end(), randWrapper);
+         for (int i = 0; i < (this->K - this->nKnown); ++i) {
+             int ii = i + this->nKnown;
+             kRange(ii) = kunfix(i);

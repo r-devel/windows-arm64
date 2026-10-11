@@ -1,0 +1,15 @@
+diff -Nru orig/WebGestaltR/tools/configure.R new/WebGestaltR/tools/configure.R
+--- orig/WebGestaltR/tools/configure.R	2026-10-04 14:35:44
++++ new/WebGestaltR/tools/configure.R	2026-10-11 16:54:46
+@@ -141,8 +141,9 @@
+       return(invisible(TRUE))
+     }
+ 
+-    if (!isTRUE("x86_64-pc-windows-gnu" %in% targets$output)) {
+-      msg <- "The required target x86_64-pc-windows-gnu is not installed"
++    target <- capture.output(source("tools/rustarch.R"))
++    if (!isTRUE(target %in% targets$output)) {
++      msg <- paste("The required target", target, "is not installed")
+       stop(errorCondition(msg, class = c("webgestaltr_error_cargo_check", "error")))
+     }
+   }

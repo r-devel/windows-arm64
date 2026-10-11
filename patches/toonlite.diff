@@ -1,0 +1,86 @@
+diff -Nru orig/toonlite/src/toon_df.cpp new/toonlite/src/toon_df.cpp
+--- orig/toonlite/src/toon_df.cpp	2026-10-10 16:24:45
++++ new/toonlite/src/toon_df.cpp	2026-10-11 16:54:05
+@@ -4,6 +4,30 @@
+ #include <cctype>
+ #include <cmath>
+ 
++// The libc++ in rtools45-aarch64 (clang 19) does not implement std::from_chars for double
++#if defined(_LIBCPP_VERSION)
++#include <cerrno>
++#include <cstdlib>
++#include <string>
++static std::from_chars_result from_chars_double(const char* first, const char* last, double& value) {
++    std::string buf(first, last);
++    const char* s = buf.c_str();
++    if (buf.empty() || std::isspace(static_cast<unsigned char>(s[0])) || s[0] == '+' ||
++        buf.find_first_of("xX") != std::string::npos) {
++        return {first, std::errc::invalid_argument};
++    }
++    char* end;
++    errno = 0;
++    double v = std::strtod(s, &end);
++    if (end == s) return {first, std::errc::invalid_argument};
++    if (errno == ERANGE) return {first + (end - s), std::errc::result_out_of_range};
++    value = v;
++    return {first + (end - s), std::errc{}};
++}
++#else
++#define from_chars_double std::from_chars
++#endif
++
+ namespace toonlite {
+ 
+ // ColBuilder implementation
+@@ -322,7 +346,7 @@
+ 
+     // Try to parse as double
+     double dbl_val;
+-    auto result = std::from_chars(value.data(), value.data() + value.size(), dbl_val);
++    auto result = from_chars_double(value.data(), value.data() + value.size(), dbl_val);
+     if (result.ec == std::errc{} && result.ptr == value.data() + value.size()) {
+         if (type_ == ColType::UNKNOWN || type_ == ColType::LOGICAL || type_ == ColType::INTEGER) {
+             promote_to(ColType::DOUBLE);
+diff -Nru orig/toonlite/src/toon_parser.cpp new/toonlite/src/toon_parser.cpp
+--- orig/toonlite/src/toon_parser.cpp	2026-10-10 16:24:45
++++ new/toonlite/src/toon_parser.cpp	2026-10-11 16:54:05
+@@ -3,6 +3,30 @@
+ #include <algorithm>
+ #include <cctype>
+ #include <cmath>
++
++// The libc++ in rtools45-aarch64 (clang 19) does not implement std::from_chars for double
++#if defined(_LIBCPP_VERSION)
++#include <cerrno>
++#include <cstdlib>
++#include <string>
++static std::from_chars_result from_chars_double(const char* first, const char* last, double& value) {
++    std::string buf(first, last);
++    const char* s = buf.c_str();
++    if (buf.empty() || std::isspace(static_cast<unsigned char>(s[0])) || s[0] == '+' ||
++        buf.find_first_of("xX") != std::string::npos) {
++        return {first, std::errc::invalid_argument};
++    }
++    char* end;
++    errno = 0;
++    double v = std::strtod(s, &end);
++    if (end == s) return {first, std::errc::invalid_argument};
++    if (errno == ERANGE) return {first + (end - s), std::errc::result_out_of_range};
++    value = v;
++    return {first + (end - s), std::errc{}};
++}
++#else
++#define from_chars_double std::from_chars
++#endif
+ #include <unordered_set>
+ 
+ namespace toonlite {
+@@ -353,7 +377,7 @@
+ 
+     // Try to parse as double
+     double value;
+-    auto result = std::from_chars(text.data(), text.data() + text.size(), value);
++    auto result = from_chars_double(text.data(), text.data() + text.size(), value);
+ 
+     if (result.ec == std::errc{} && result.ptr == text.data() + text.size()) {
+         // Reject special values in strict mode

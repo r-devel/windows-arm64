@@ -1,0 +1,15 @@
+diff -Nru orig/Uno/inst/build_uno.sh new/Uno/inst/build_uno.sh
+--- orig/Uno/inst/build_uno.sh	2026-09-29 14:56:45
++++ new/Uno/inst/build_uno.sh	2026-10-11 16:52:26
+@@ -56,6 +56,11 @@
+ export CFLAGS="${CFLAGS} ${CPPFLAGS}"
+ export CXXFLAGS="${CXXFLAGS} ${CPPFLAGS}"
+ export LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
++# On Windows arm64, flang must link with lld, it may otherwise pick up an
++# x86_64 ld.exe from PATH (breaks the CMake Fortran compiler check)
++case "${FC}" in
++  *mingw32-flang*) export LDFLAGS="${LDFLAGS} -fuse-ld=lld" ;;
++esac
+ 
+ # R-package console-I/O redirection (mirror of build_highs.sh's HIGHS_R_PRINT).
+ # uno/tools/r_io.h (#ifdef UNO_R_PRINT, pulled in via Logger.hpp and the few

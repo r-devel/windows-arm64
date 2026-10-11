@@ -1,0 +1,49 @@
+diff -Nru orig/icebergr/src/Makevars.win.in new/icebergr/src/Makevars.win.in
+--- orig/icebergr/src/Makevars.win.in	2026-09-10 20:43:57
++++ new/icebergr/src/Makevars.win.in	2026-10-11 16:55:34
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+diff -Nru orig/icebergr/tools/config.R new/icebergr/tools/config.R
+--- orig/icebergr/tools/config.R	2026-09-10 20:43:57
++++ new/icebergr/tools/config.R	2026-10-11 16:55:34
+@@ -84,6 +84,11 @@
+ # `ICEBERGR_CARGO_FEATURES=glue R CMD INSTALL` would fail deep inside a compile
+ # rather than simply going to the network for what it needs.
+ use_vendor <- !is_not_cran && vendor_exists && !nzchar(env_features)
++# The vendored sources are pruned for the platforms the authors build on: on
++# arm64 Windows ring needs windows-sys modules that were stripped. Download instead.
++if (grepl("aarch64", R.version$platform) && .Platform$OS.type == "windows") {
++  use_vendor <- FALSE
++}
+ if (!is_not_cran && vendor_exists && nzchar(env_features)) {
+   message(paste(
+     c(
+@@ -174,6 +179,16 @@
+   invisible(file.remove(mv_ofp))
+ }
+ 
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ mv_txt <- readLines(mv_fp, warn = FALSE)
+ 
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt)
+@@ -184,6 +199,7 @@
+ new_txt <- gsub("@PROFILE@", .profile, new_txt)
+ new_txt <- gsub("@CLEAN_TARGET@", .clean_targets, new_txt)
+ new_txt <- gsub("@LIBDIR@", .libdir, new_txt)
++new_txt <- gsub("@WINDOWS_TARGET@", .windows_target, new_txt)
+ 
+ message("Writing `", mv_ofp, "`.")
+ con <- file(mv_ofp, open = "wb")

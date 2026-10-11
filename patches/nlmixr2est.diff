@@ -1,0 +1,56 @@
+diff -Nru orig/nlmixr2est/src/npde.cpp new/nlmixr2est/src/npde.cpp
+--- orig/nlmixr2est/src/npde.cpp	2026-09-20 08:34:24
++++ new/nlmixr2est/src/npde.cpp	2026-10-11 16:52:19
+@@ -7,7 +7,10 @@
+ #include "nmParallelCore.h"
+ 
+ #ifdef _OPENMP
++#pragma push_macro("match")
++#undef match
+ #include <omp.h>
++#pragma pop_macro("match")
+ #endif
+ 
+ arma::Col<int> getSimIdLoc(arma::Col<int>& id, arma::Col<int>& simId,
+diff -Nru orig/nlmixr2est/src/rxomp.h new/nlmixr2est/src/rxomp.h
+--- orig/nlmixr2est/src/rxomp.h	2026-09-20 08:34:24
++++ new/nlmixr2est/src/rxomp.h	2026-10-11 16:52:19
+@@ -5,7 +5,10 @@
+ #endif
+ #ifdef _OPENMP
+ #include <pthread.h>
++#pragma push_macro("match")
++#undef match
+ #include <omp.h>
++#pragma pop_macro("match")
+ 
+ #else
+ 
+diff -Nru orig/nlmixr2est/src/utilc.c new/nlmixr2est/src/utilc.c
+--- orig/nlmixr2est/src/utilc.c	2026-09-20 08:34:24
++++ new/nlmixr2est/src/utilc.c	2026-10-11 16:52:19
+@@ -72,7 +72,10 @@
+ }
+ 
+ #ifdef _OPENMP
++#pragma push_macro("match")
++#undef match
+ #include <omp.h>
++#pragma pop_macro("match")
+ #endif
+ void RSprintf(const char *format, ...) {
+ #ifdef _OPENMP
+diff -Nru orig/nlmixr2est/src/vaeEncoder.cpp new/nlmixr2est/src/vaeEncoder.cpp
+--- orig/nlmixr2est/src/vaeEncoder.cpp	2026-09-20 08:34:24
++++ new/nlmixr2est/src/vaeEncoder.cpp	2026-10-11 16:52:19
+@@ -19,7 +19,10 @@
+ #include "vaeEncoder.h"
+ #include "nmParallelCore.h"
+ #ifdef _OPENMP
++#pragma push_macro("match")
++#undef match
+ #include <omp.h>
++#pragma pop_macro("match")
+ #endif
+ // [[Rcpp::depends(RcppArmadillo)]]
+ 

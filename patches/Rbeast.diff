@@ -1,0 +1,12 @@
+diff -Nru orig/Rbeast/src/abc_win32_demo.h new/Rbeast/src/abc_win32_demo.h
+--- orig/Rbeast/src/abc_win32_demo.h	2026-10-05 15:19:53
++++ new/Rbeast/src/abc_win32_demo.h	2026-10-11 18:06:07
+@@ -86,6 +86,8 @@
+ extern void DeleteGDIObject(int N);
+ extern void EnableButtons(HWND *hButton,HWND *hDiag);
+ extern void ResizeDialogControls(HWND hwnd);
++extern void BEAST2_ResizeDialogControls(HWND hwnd);
++extern void BEAST2_GeneratePlotData(void);
+ extern BYTE ANDmaskIcon[];
+ extern BYTE XORmaskIcon[];
+ extern HICON   hIcon;

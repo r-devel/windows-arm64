@@ -1,0 +1,11 @@
+diff -Nru orig/scellpam/src/closecases.cpp new/scellpam/src/closecases.cpp
+--- orig/scellpam/src/closecases.cpp	2026-10-05 15:20:09
++++ new/scellpam/src/closecases.cpp	2026-10-11 16:56:55
+@@ -17,6 +17,7 @@
+  */
+ 
+ #include <closecases.h>
++#include <pthread.h>
+ 
+ extern unsigned char DEB;
+ 

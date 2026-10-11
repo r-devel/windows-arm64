@@ -1,0 +1,2 @@
+# Patches must keep their exact line endings, also in Windows checkouts
+patches/** -text

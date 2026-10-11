@@ -1,0 +1,14 @@
+diff -Nru orig/x13binary/src/Makefile.win new/x13binary/src/Makefile.win
+--- orig/x13binary/src/Makefile.win	2026-09-28 14:59:37
++++ new/x13binary/src/Makefile.win	2026-10-11 16:52:26
+@@ -1,6 +1,9 @@
++# flang must link with lld, it may otherwise pick up an x86_64 ld.exe from PATH
++FLANG_LDFLAGS = $(if $(findstring flang,$(FC)),-fuse-ld=lld)
++
+ all:
+ 	@echo "using Fortran compiler: '`$(FC) --version | head -n 1`'" || true
+-	(cd ../tools/x13as_html && FC="$(FC)" FFLAGS="-O2" LINKER="$(FC)" $(MAKE) -f makefile.gf x13ashtml)
++	(cd ../tools/x13as_html && FC="$(FC)" FFLAGS="-O2" LINKER="$(FC) $(FLANG_LDFLAGS)" $(MAKE) -f makefile.gf x13ashtml)
+ 	mkdir -p ../inst/bin
+ 	cp -f ../tools/x13as_html/x13ashtml.exe ../inst/bin/
+ 

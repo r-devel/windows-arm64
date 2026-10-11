@@ -1,0 +1,10 @@
+diff -Nru orig/Rbec/src/rcpp_test.cpp new/Rbec/src/rcpp_test.cpp
+--- orig/Rbec/src/rcpp_test.cpp	2026-10-10 15:21:55
++++ new/Rbec/src/rcpp_test.cpp	2026-10-11 16:59:30
+@@ -1,6 +1,5 @@
+ #include <stdlib.h>
+ #include "dada.h"
+-#include "emmintrin.h"
+ using namespace std;
+ // [[Rcpp::interfaces(cpp)]]
+ 

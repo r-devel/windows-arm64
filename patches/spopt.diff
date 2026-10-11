@@ -1,0 +1,49 @@
+diff -Nru orig/spopt/src/Makevars.win.in new/spopt/src/Makevars.win.in
+--- orig/spopt/src/Makevars.win.in	2026-10-10 16:47:22
++++ new/spopt/src/Makevars.win.in	2026-10-11 16:53:12
+@@ -1,4 +1,4 @@
+-TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
++TARGET = @WINDOWS_TARGET@
+ 
+ TARGET_DIR = ./rust/target
+ LIBDIR = $(TARGET_DIR)/$(TARGET)/@LIBDIR@
+@@ -24,7 +24,7 @@
+ 		echo "=== Using offline vendor directory ==="; \
+ 		mkdir -p $(CARGOTMP) && \
+ 		cp rust/vendor-config.toml $(CARGOTMP)/config.toml; \
+-	elif [ -f ./rust/vendor.tar.xz ]; then \
++	elif [ -f ./rust/novendor.tar.xz ]; then \
+ 		echo "=== Using offline vendor tarball ==="; \
+ 		tar xf rust/vendor.tar.xz && \
+ 		mkdir -p $(CARGOTMP) && \
+diff -Nru orig/spopt/tools/config.R new/spopt/tools/config.R
+--- orig/spopt/tools/config.R	2026-10-10 16:47:22
++++ new/spopt/tools/config.R	2026-10-11 16:53:12
+@@ -9,7 +9,7 @@
+ env_not_cran <- Sys.getenv("NOT_CRAN")
+ 
+ # check if the vendored zip file exists
+-vendor_exists <- file.exists("src/rust/vendor.tar.xz")
++vendor_exists <- FALSE
+ 
+ is_not_cran <- env_not_cran != ""
+ is_debug <- env_debug != ""
+@@ -97,7 +97,18 @@
+ mv_txt <- readLines(mv_fp)
+ 
+ # replace placeholder values
++.windows_target <- if (grepl("aarch", R.version$platform)) {
++  "aarch64-pc-windows-gnullvm"
++} else if (grepl("clang", Sys.getenv("R_COMPILED_BY"))) {
++  "x86_64-pc-windows-gnullvm"
++} else if (grepl("i386", R.version$platform)) {
++  "i686-pc-windows-gnu"
++} else {
++  "x86_64-pc-windows-gnu"
++}
++
+ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
++  gsub("@WINDOWS_TARGET@", .windows_target, x = _) |>
+   gsub("@PROFILE@", .profile, x = _) |>
+   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
+   gsub("@LIBDIR@", .libdir, x = _) |>

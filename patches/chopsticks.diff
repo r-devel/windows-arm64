@@ -1,0 +1,6 @@
+diff -Nru orig/chopsticks/src/Makevars.win new/chopsticks/src/Makevars.win
+--- orig/chopsticks/src/Makevars.win	1970-01-01 01:00:00
++++ new/chopsticks/src/Makevars.win	2026-10-11 16:52:20
+@@ -0,0 +1,2 @@
++# K&R style C definitions are not valid in C23 (default on Windows)
++override CFLAGS = $(C17FLAGS)

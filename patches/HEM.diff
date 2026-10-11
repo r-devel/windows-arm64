@@ -1,0 +1,6 @@
+diff -Nru orig/HEM/src/Makevars.win new/HEM/src/Makevars.win
+--- orig/HEM/src/Makevars.win	1970-01-01 01:00:00
++++ new/HEM/src/Makevars.win	2026-10-11 16:52:21
+@@ -0,0 +1,2 @@
++# K&R style C definitions are not valid in C23 (default on Windows)
++override CFLAGS = $(C17FLAGS)

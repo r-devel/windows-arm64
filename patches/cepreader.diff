@@ -1,0 +1,11 @@
+diff -Nru orig/cepreader/src/Makefile.win new/cepreader/src/Makefile.win
+--- orig/cepreader/src/Makefile.win	2026-09-27 13:26:53
++++ new/cepreader/src/Makefile.win	2026-10-11 16:52:26
+@@ -1,3 +1,6 @@
++# flang must link with lld, it may otherwise pick up an x86_64 ld.exe from PATH
++FLANG_LDFLAGS = $(if $(findstring flang,$(FC)),-fuse-ld=lld)
++
+ cepread: cepin.f
+ 	@echo "using Fortran compiler: '`$(FC) --version | head -1`'" || true
+-	$(FC) $(FFLAGS) cepin.f -o cepread
++	$(FC) $(FFLAGS) $(FLANG_LDFLAGS) cepin.f -o cepread

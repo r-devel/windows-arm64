@@ -1,0 +1,57 @@
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: Packages to build from source with the patches from this branch (space separated)
+        type: string
+        required: true
+
+name: Test install-time patches
+
+jobs:
+  test:
+    name: ${{ inputs.packages }}
+    runs-on: windows-11-arm
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: false
+
+      - name: Add rust target
+        run: rustup target add aarch64-pc-windows-gnullvm
+        continue-on-error: true
+
+      - name: Build packages from source
+        shell: Rscript {0}
+        env:
+          PACKAGES: ${{ inputs.packages }}
+        run: |
+          options(repos = c(CRAN = "https://cran.r-universe.dev", BIOC = "https://bioc.r-universe.dev"))
+          Sys.setenv("_R_INSTALL_TIME_PATCHES_" = file.path(getwd(), "patches"))
+          pkgs <- strsplit(trimws(Sys.getenv("PACKAGES")), "[ ,]+")[[1]]
+          db <- available.packages()
+          deps <- unique(unlist(tools::package_dependencies(pkgs, db = db,
+            which = c("Depends", "Imports", "LinkingTo"), recursive = TRUE)))
+          install.packages(setdiff(deps, c(pkgs, rownames(installed.packages()))))
+          failed <- character()
+          for (pkg in pkgs) {
+            tarball <- download.packages(pkg, tempdir(), type = "source")[1, 2]
+            # Stream the output (some packages take a long time to build) and keep a copy
+            unix <- function(x) normalizePath(x, winslash = "/", mustWork = FALSE)
+            logfile <- unix(file.path(tempdir(), paste0(pkg, ".log")))
+            script <- unix(file.path(tempdir(), "install.sh"))
+            writeLines(c("set -o pipefail", sprintf('"%s" CMD INSTALL "%s" 2>&1 | tee "%s"',
+              unix(file.path(R.home("bin"), "R")), unix(tarball), logfile)), script)
+            # Not plain 'bash': on Windows runners that can be WSL, which can't see C:/ paths
+            status <- system2(Sys.which("sh"), script)
+            out <- readLines(logfile, warn = FALSE)
+            ok <- status == 0 && !any(grepl("failed to apply patch", out)) &&
+              isTRUE(requireNamespace(pkg, quietly = TRUE))
+            cat(sprintf("\n::notice::%s: %s\n", pkg, if (ok) "OK" else "FAILED"))
+            if (!ok) failed <- c(failed, pkg)
+          }
+          if (length(failed)) stop("Failed: ", paste(failed, collapse = " "))

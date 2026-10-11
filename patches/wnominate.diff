@@ -1,0 +1,7 @@
+diff -Nru orig/wnominate/src/Makevars.win new/wnominate/src/Makevars.win
+--- orig/wnominate/src/Makevars.win	2026-09-15 13:41:34
++++ new/wnominate/src/Makevars.win	2026-10-11 16:53:03
+@@ -1 +1,2 @@
+-PKG_FCFLAGS = $(SAFE_FFLAGS) --float-store
++# --float-store is a gfortran option, not supported by flang (Windows arm64)
++PKG_FCFLAGS = $(SAFE_FFLAGS) $(if $(findstring flang,$(FC)),,--float-store)

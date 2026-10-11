@@ -1,0 +1,16 @@
+diff -Nru orig/ldt/src/ldt_base.h new/ldt/src/ldt_base.h
+--- orig/ldt/src/ldt_base.h	2026-09-26 13:17:47
++++ new/ldt/src/ldt_base.h	2026-10-11 16:54:45
+@@ -32,7 +32,11 @@
+ enum bool3 { False = -1, Null = 0, True = 1 };
+ 
+ #if defined _WIN32 || defined __CYGWIN__
+-#ifdef __GNUC__
++#if defined(__clang__)
++// dllexport makes clang instantiate implicit copy members, which fails for
++// classes with unique_ptr members. Not needed: R exports all symbols via a .def file.
++#define LDT_EXPORT
++#elif defined(__GNUC__)
+ #define LDT_EXPORT __attribute__((dllexport))
+ #else
+ #define LDT_EXPORT __declspec(dllexport)
