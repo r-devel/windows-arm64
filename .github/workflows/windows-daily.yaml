@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ 'devel', 'next', '4.6.1' ]
+        version: [ 'devel', 'next', '4.6.2' ]
         arch: [ 'x86_64', 'aarch64']
     steps:
     - name: Download R Source
